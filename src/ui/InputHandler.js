@@ -1,5 +1,6 @@
 import { GameEngine } from '../game/GameEngine.js';
 import { SecurityValidator } from '../utils/SecurityValidator.js';
+import { localization } from '../localization/Localization.js';
 
 export class InputHandler {
   gameEngine;
@@ -141,14 +142,14 @@ export class InputHandler {
       document.getElementById('menu-modal')?.classList.add('hidden');
       this.clear_menu_form();
       
-      this.show_notification('Menu item added successfully!', 'success');
+      this.show_notification(localization.getText('menuItemAdded'), 'success');
     } catch (error) {
       this.show_notification(error.message, 'error');
     }
   }
   
   handle_update_price(itemId){
-    const newPriceStr = prompt('Enter new price:');
+    const newPriceStr = prompt(localization.getText('enterNewPrice'));
     if (!newPriceStr) return;
     
     try {
@@ -162,14 +163,14 @@ export class InputHandler {
       };
       
       this.gameEngine.execute_action('player', action);
-      this.show_notification('Price updated!', 'success');
+      this.show_notification(localization.getText('priceUpdated'), 'success');
     } catch (error) {
       this.show_notification(error.message, 'error');
     }
   }
   
   handle_remove_item(itemId){
-    if (confirm('Are you sure you want to remove this item?')) {
+    if (confirm(localization.getText('confirmRemoveItem'))) {
       const action= {
         type: 'menu',
         action: 'remove_item',
@@ -178,12 +179,12 @@ export class InputHandler {
       };
       
       this.gameEngine.execute_action('player', action);
-      this.show_notification('Item removed!', 'success');
+      this.show_notification(localization.getText('itemRemoved'), 'success');
     }
   }
   
   handle_launch_campaign(){
-    const budgetStr = prompt('Enter marketing budget ($1000-$20000):');
+    const budgetStr = prompt(localization.getText('enterMarketingBudget'));
     if (!budgetStr) return;
     
     try {
@@ -201,14 +202,14 @@ export class InputHandler {
       };
       
       this.gameEngine.execute_action('player', action);
-      this.show_notification(`Marketing campaign launched! Budget: $${budget}`, 'success');
+      this.show_notification(`${localization.getText('campaignLaunched')} ${localization.getText('budget')}: $${budget}`, 'success');
     } catch (error) {
       this.show_notification(error.message, 'error');
     }
   }
   
   handle_hire_staff(){
-    const staffType = confirm('Hire a chef? (OK for chef, Cancel for waiter)') ? 'chef' : 'waiter';
+    const staffType = confirm(localization.getText('hireChefOrWaiter')) ? 'chef' : 'waiter';
     
     const action= {
       type: 'operations',
@@ -218,7 +219,8 @@ export class InputHandler {
     };
     
     this.gameEngine.execute_action('player', action);
-    this.show_notification(`New ${staffType} hired!`, 'success');
+    const staffTypeName = localization.getText(`staffTypes.${staffType}`) || staffType;
+    this.show_notification(`${localization.getText('staffHired')}: ${staffTypeName}`, 'success');
   }
   
   handle_upgrade_equipment(){
@@ -230,7 +232,7 @@ export class InputHandler {
     };
     
     this.gameEngine.execute_action('player', action);
-    this.show_notification('Equipment upgraded!', 'success');
+    this.show_notification(localization.getText('equipmentUpgraded'), 'success');
   }
   
   clear_menu_form(){

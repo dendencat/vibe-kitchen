@@ -4,13 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;">
-    <title>AI Restaurant Battle</title>
+    <title data-i18n="gameTitle">AI Restaurant Battle</title>
     <link rel="stylesheet" href="styles/main.css">
     <link rel="stylesheet" href="styles/components.css">
     <link rel="stylesheet" href="styles/responsive.css">
     <link rel="stylesheet" href="styles/animations.css">
 </head>
-<body>
+<body data-lang="en">
+    <!-- Language Switcher -->
+    <div class="language-switcher">
+        <button class="lang-btn active" data-lang="en">EN</button>
+        <button class="lang-btn" data-lang="ja">JP</button>
+    </div>
+
     <div class="game-container">
         <header class="game-header">
             <div class="time-display">
@@ -21,7 +27,7 @@
                 <canvas id="revenue-chart-canvas" width="300" height="100"></canvas>
             </div>
             <div class="ranking-display">
-                <h3>Market Share Ranking</h3>
+                <h3 data-i18n="marketShareRanking">Market Share Ranking</h3>
                 <div id="ranking-list"></div>
             </div>
         </header>
@@ -32,15 +38,15 @@
                     <canvas id="restaurant-canvas" width="600" height="400"></canvas>
                     <div class="restaurant-stats">
                         <div class="stat-item">
-                            <span class="stat-label">Cash:</span>
+                            <span class="stat-label" data-i18n="cash">Cash:</span>
                             <span id="cash-display" class="stat-value">$50,000</span>
                         </div>
                         <div class="stat-item">
-                            <span class="stat-label">Customers:</span>
+                            <span class="stat-label" data-i18n="customers">Customers:</span>
                             <span id="customer-count" class="stat-value">0</span>
                         </div>
                         <div class="stat-item">
-                            <span class="stat-label">Satisfaction:</span>
+                            <span class="stat-label" data-i18n="satisfaction">Satisfaction:</span>
                             <span id="satisfaction-display" class="stat-value">100%</span>
                         </div>
                     </div>
@@ -49,7 +55,7 @@
             </section>
             
             <section class="ai-competitors">
-                <h3>AI Competitors</h3>
+                <h3 data-i18n="aiCompetitors">AI Competitors</h3>
                 <div class="competitor-grid" id="competitor-grid">
                     <!-- AI competitor cards will be inserted here -->
                 </div>
@@ -59,35 +65,35 @@
         <aside class="ai-assistant">
             <div class="sakura-avatar">
                 <div class="avatar-image">🌸</div>
-                <span class="assistant-name">Sakura AI Assistant</span>
+                <span class="assistant-name" data-i18n="aiAssistantName">Sakura AI Assistant</span>
             </div>
             <div class="advice-panel">
-                <h4>Strategic Advice</h4>
-                <div id="advice-content" class="advice-content">
+                <h4 data-i18n="strategicAdvice">Strategic Advice</h4>
+                <div id="advice-content" class="advice-content" data-i18n="welcomeMessage">
                     Welcome! I'm here to help you succeed in the restaurant business.
                 </div>
             </div>
             <div class="market-analysis">
-                <h4>Market Analysis</h4>
+                <h4 data-i18n="marketAnalysis">Market Analysis</h4>
                 <div id="market-analysis-content"></div>
             </div>
         </aside>
         
         <footer class="control-panel">
             <div class="menu-management">
-                <h4>Menu Management</h4>
+                <h4 data-i18n="menuManagement">Menu Management</h4>
                 <div id="menu-items" class="menu-items-list"></div>
-                <button id="add-menu-item" class="btn btn-primary">Add New Dish</button>
+                <button id="add-menu-item" class="btn btn-primary" data-i18n="addNewDish">Add New Dish</button>
             </div>
             <div class="marketing-controls">
-                <h4>Marketing</h4>
-                <button id="launch-campaign" class="btn btn-secondary">Launch Campaign</button>
+                <h4 data-i18n="marketing">Marketing</h4>
+                <button id="launch-campaign" class="btn btn-secondary" data-i18n="launchCampaign">Launch Campaign</button>
                 <div id="campaign-status"></div>
             </div>
             <div class="operations-panel">
-                <h4>Operations</h4>
-                <button id="hire-staff" class="btn btn-secondary">Hire Staff</button>
-                <button id="upgrade-equipment" class="btn btn-secondary">Upgrade Equipment</button>
+                <h4 data-i18n="operations">Operations</h4>
+                <button id="hire-staff" class="btn btn-secondary" data-i18n="hireStaff">Hire Staff</button>
+                <button id="upgrade-equipment" class="btn btn-secondary" data-i18n="upgradeEquipment">Upgrade Equipment</button>
                 <div id="operations-status"></div>
             </div>
         </footer>
@@ -96,14 +102,14 @@
     <!-- Modal for adding menu items -->
     <div id="menu-modal" class="modal hidden">
         <div class="modal-content">
-            <h3>Add New Menu Item</h3>
+            <h3 data-i18n="addNewMenuItem">Add New Menu Item</h3>
             <form id="menu-item-form">
-                <input type="text" id="item-name" placeholder="Dish Name" required maxlength="50">
-                <input type="number" id="item-price" placeholder="Price ($)" min="1" max="1000" step="0.01" required>
-                <input type="number" id="item-cost" placeholder="Cost ($)" min="0.1" max="500" step="0.01" required>
-                <input type="number" id="item-cooktime" placeholder="Cook Time (seconds)" min="1" max="60" required>
-                <button type="submit" class="btn btn-primary">Add Item</button>
-                <button type="button" id="cancel-menu" class="btn btn-secondary">Cancel</button>
+                <input type="text" id="item-name" data-i18n-placeholder="dishName" placeholder="Dish Name" required maxlength="50">
+                <input type="number" id="item-price" data-i18n-placeholder="price" placeholder="Price ($)" min="1" max="1000" step="0.01" required>
+                <input type="number" id="item-cost" data-i18n-placeholder="cost" placeholder="Cost ($)" min="0.1" max="500" step="0.01" required>
+                <input type="number" id="item-cooktime" data-i18n-placeholder="cookTime" placeholder="Cook Time (seconds)" min="1" max="60" required>
+                <button type="submit" class="btn btn-primary" data-i18n="addItem">Add Item</button>
+                <button type="button" id="cancel-menu" class="btn btn-secondary" data-i18n="cancel">Cancel</button>
             </form>
         </div>
     </div>
@@ -111,9 +117,9 @@
     <!-- Game Over Screen -->
     <div id="game-over" class="game-over-screen hidden">
         <div class="game-over-content">
-            <h2>Game Over!</h2>
+            <h2 data-i18n="gameOver">Game Over!</h2>
             <div id="final-results"></div>
-            <button id="restart-game" class="btn btn-primary">Play Again</button>
+            <button id="restart-game" class="btn btn-primary" data-i18n="playAgain">Play Again</button>
         </div>
     </div>
     

@@ -1,5 +1,6 @@
 import { GAME_CONSTANTS } from '../utils/Constants.js';
 import { SecurityValidator } from '../utils/SecurityValidator.js';
+import { localization } from '../localization/Localization.js';
 
 export class GameRenderer {
   revenueChartCanvas;
@@ -17,6 +18,11 @@ export class GameRenderer {
     this.restaurantCtx = this.restaurantCanvas?.getContext('2d');
     
     this.initialize_revenue_history();
+    
+    // Listen for language changes
+    document.addEventListener('languageChanged', () => {
+      this.update_day_counter_format();
+    });
   }
   
   initialize_revenue_history(){
@@ -44,13 +50,25 @@ export class GameRenderer {
     const timeRemaining = document.getElementById('time-remaining');
     
     if (dayCounter) {
-      dayCounter.textContent = `Day ${gameState.currentDay}`;
+      const dayText = localization.getText('dayCounter');
+      dayCounter.textContent = `${dayText} ${gameState.currentDay} / 7`;
     }
     
     if (timeRemaining) {
       const minutes = Math.floor(gameState.timeRemaining / 60);
       const seconds = gameState.timeRemaining % 60;
-      timeRemaining.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+      const timeText = localization.getText('timeRemaining');
+      timeRemaining.textContent = `${timeText}: ${minutes}:${seconds.toString().padStart(2, '0')}`;
+    }
+  }
+  
+  update_day_counter_format(){
+    // Force update of day counter with new language
+    const dayCounter = document.getElementById('day-counter');
+    if (dayCounter) {
+      const dayText = localization.getText('dayCounter');
+      const currentDay = dayCounter.textContent.match(/\d+/)?.[0] || 1;
+      dayCounter.textContent = `${dayText} ${currentDay} / 7`;
     }
   }
   
@@ -94,29 +112,34 @@ export class GameRenderer {
     
     const competitors = gameState.restaurants.filter(r => r.type === 'ai');
     
-    competitorGrid.innerHTML = competitors.map(competitor => `
-      <div class="competitor-card">
-        <h3>${SecurityValidator.escape_html(competitor.name)}</h3>
-        <div class="competitor-stats">
-          <div class="stat">
-            <span class="label">Market Share:</span>
-            <span class="value">${competitor.marketShare.toFixed(1)}%</span>
-          </div>
-          <div class="stat">
-            <span class="label">Revenue:</span>
-            <span class="value">$${competitor.revenue.toFixed(0)}</span>
-          </div>
-          <div class="stat">
-            <span class="label">Satisfaction:</span>
-            <span class="value">${competitor.satisfaction.toFixed(0)}%</span>
-          </div>
-          <div class="stat">
-            <span class="label">Strategy:</span>
-            <span class="value">${competitor.strategyType || 'balanced'}</span>
+    competitorGrid.innerHTML = competitors.map(competitor => {
+      const restaurantName = localization.getText(`aiRestaurants.${competitor.strategyType}`) || competitor.name;
+      const strategyDesc = localization.getText(`aiStrategies.${competitor.strategyType}`) || competitor.strategyType;
+      
+      return `
+        <div class="competitor-card">
+          <h3>${SecurityValidator.escape_html(restaurantName)}</h3>
+          <div class="competitor-stats">
+            <div class="stat">
+              <span class="label">${localization.getText('marketShare')}:</span>
+              <span class="value">${competitor.marketShare.toFixed(1)}%</span>
+            </div>
+            <div class="stat">
+              <span class="label">${localization.getText('revenue')}:</span>
+              <span class="value">$${competitor.revenue.toFixed(0)}</span>
+            </div>
+            <div class="stat">
+              <span class="label">${localization.getText('satisfaction')}:</span>
+              <span class="value">${competitor.satisfaction.toFixed(0)}%</span>
+            </div>
+            <div class="stat">
+              <span class="label">${localization.getText('strategy')}:</span>
+              <span class="value" title="${SecurityValidator.escape_html(strategyDesc)}">${competitor.strategyType || 'balanced'}</span>
+            </div>
           </div>
         </div>
-      </div>
-    `).join('');
+      `;
+    }).join('');
   }
   
   update_menu_display(gameState){
@@ -133,13 +156,13 @@ export class GameRenderer {
           <span class="item-price">$${item.price.toFixed(2)}</span>
         </div>
         <div class="item-stats">
-          <span>Pop: ${item.popularity.toFixed(0)}%</span>
+          <span>${localization.getText('popularity')}: ${item.popularity.toFixed(0)}%</span>
           <span>★${item.customerRating.toFixed(1)}</span>
-          <span>Profit: ${item.profitMargin.toFixed(0)}%</span>
+          <span>${localization.getText('profit')}: ${item.profitMargin.toFixed(0)}%</span>
         </div>
         <div class="item-actions">
-          <button class="update-price" data-item-id="${item.id}">Update Price</button>
-          <button class="remove-item" data-item-id="${item.id}">Remove</button>
+          <button class="update-price" data-item-id="${item.id}">${localization.getText('updatePrice')}</button>
+          <button class="remove-item" data-item-id="${item.id}">${localization.getText('remove')}</button>
         </div>
       </div>
     `).join('');

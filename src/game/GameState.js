@@ -1,5 +1,6 @@
 import { GAME_CONFIG, STARTING_MENU_ITEMS, AI_RESTAURANT_NAMES } from '../utils/Constants.js';
 import { MathUtils } from '../utils/MathUtils.js';
+import { localization } from '../localization/Localization.js';
 
 export class GameStateManager {
   state;
@@ -86,16 +87,19 @@ export class GameStateManager {
   }
   
   create_starting_menu(){
-    return STARTING_MENU_ITEMS.map((item, index) => ({
-      id: `menu-${index}`,
-      name: item.name,
-      price: item.price,
-      cost: item.cost,
-      cookTime: item.cookTime,
-      popularity: item.popularity || 60,
-      profitMargin: MathUtils.calculate_profit_margin(item.price, item.cost),
-      customerRating: 4.0
-    }));
+    return STARTING_MENU_ITEMS.map((item, index) => {
+      const localizedName = item.localizedKey ? localization.getText(item.localizedKey) : item.name;
+      return {
+        id: `menu-${index}`,
+        name: localizedName,
+        price: item.price,
+        cost: item.cost,
+        cookTime: item.cookTime,
+        popularity: item.popularity || 60,
+        profitMargin: MathUtils.calculate_profit_margin(item.price, item.cost),
+        customerRating: 4.0
+      };
+    });
   }
   
   create_starting_equipment() {

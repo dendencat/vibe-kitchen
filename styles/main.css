@@ -13,6 +13,48 @@ body {
   overflow: hidden;
 }
 
+/* Japanese font support */
+body[data-lang="ja"] {
+  font-family: 'Hiragino Sans', 'ヒラギノ角ゴシック', 'Yu Gothic', 'メイリオ', 'Meiryo', sans-serif;
+}
+
+/* Language Switcher */
+.language-switcher {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  z-index: 1500;
+  display: flex;
+  gap: 5px;
+  background: rgba(22, 33, 62, 0.9);
+  padding: 5px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.lang-btn {
+  padding: 6px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.1);
+  color: #eee;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.lang-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.lang-btn.active {
+  background: #3498db;
+  border-color: #3498db;
+  color: white;
+}
+
 .game-container {
   width: 1280px;
   height: 720px;

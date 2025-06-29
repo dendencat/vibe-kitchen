@@ -1,8 +1,43 @@
 import { GameEngine } from './game/GameEngine.js';
+import { localization } from './localization/Localization.js';
+
+// Initialize language switcher
+function setupLanguageSwitcher() {
+  const languageButtons = document.querySelectorAll('.lang-btn');
+  
+  languageButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const lang = btn.getAttribute('data-lang');
+      
+      // Update active button
+      languageButtons.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      
+      // Update body language attribute
+      document.body.setAttribute('data-lang', lang);
+      
+      // Update localization
+      localization.setLanguage(lang);
+    });
+  });
+  
+  // Set initial language state
+  const currentLang = localization.getCurrentLanguage();
+  document.body.setAttribute('data-lang', currentLang);
+  const currentBtn = document.querySelector(`[data-lang="${currentLang}"]`);
+  if (currentBtn) {
+    document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+    currentBtn.classList.add('active');
+  }
+}
 
 // Initialize the game when the DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
   try {
+    // Initialize localization first
+    setupLanguageSwitcher();
+    localization.updateAllText();
+    
     const gameEngine = new GameEngine();
     console.log('AI Restaurant Battle initialized successfully!');
     

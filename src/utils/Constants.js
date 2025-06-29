@@ -91,21 +91,27 @@ export const AI_RESTAURANT_NAMES = {
 export const STARTING_MENU_ITEMS = [
   {
     name: "Classic Burger",
+    localizedKey: "startingMenuItems.burger",
     price: 12.99,
     cost: 4.50,
-    cookTime: 15
+    cookTime: 15,
+    popularity: 75
   },
   {
-    name: "Caesar Salad", 
+    name: "Caesar Salad",
+    localizedKey: "startingMenuItems.salad", 
     price: 8.99,
     cost: 2.50,
-    cookTime: 5
+    cookTime: 5,
+    popularity: 60
   },
   {
     name: "Grilled Chicken",
+    localizedKey: "startingMenuItems.chicken",
     price: 15.99,
     cost: 6.00,
-    cookTime: 20
+    cookTime: 20,
+    popularity: 80
   }
 ];
 
