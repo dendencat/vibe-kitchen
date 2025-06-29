@@ -89,7 +89,7 @@ export class GameEngine {
     
     if (newTimeRemaining <= 0) {
       // Check if game should end
-      if (state.currentDay > GAME_CONSTANTS.DAYS_PER_GAME) {
+      if (state.currentDay >= GAME_CONSTANTS.DAYS_PER_GAME) {
         this.end_game();
         return;
       }

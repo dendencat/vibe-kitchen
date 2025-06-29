@@ -435,6 +435,10 @@ body {
   z-index: 2000;
 }
 
+.game-over-screen.hidden {
+  display: none !important;
+}
+
 .game-over-content {
   background-color: #16213e;
   border-radius: 12px;
