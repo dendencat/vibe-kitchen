@@ -1,4 +1,3 @@
-import { GameState, Restaurant, MarketEvent, MenuItem } from '../types/GameTypes.js';
 import { GAME_CONFIG, STARTING_MENU_ITEMS, AI_RESTAURANT_NAMES } from '../utils/Constants.js';
 import { MathUtils } from '../utils/MathUtils.js';
 

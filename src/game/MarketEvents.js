@@ -1,11 +1,10 @@
-import { MarketEvent } from '../types/GameTypes.js';
 import { GAME_CONFIG } from '../utils/Constants.js';
 import { MathUtils } from '../utils/MathUtils.js';
 
 export class MarketEventManager {
-  activeEvents new Set();
+  activeEvents = new Set();
   
-  generate_random_event(): MarketEvent | null {
+  generate_random_event() {
     // Filter events that aren't already active
     const availableEvents = GAME_CONFIG.events.filter(
       event => !this.activeEvents.has(event.id)
@@ -15,7 +14,12 @@ export class MarketEventManager {
     
     // Check probabilities
     for (const event of availableEvents) {
-      if (Math.random()  {
+      if (Math.random() < event.probability) {
+        // Mark as active
+        this.activeEvents.add(event.id);
+        
+        // Set timeout to remove when expired
+        setTimeout(() => {
           this.activeEvents.delete(event.id);
         }, event.duration * 60 * 1000); // Convert days to milliseconds
         
@@ -26,11 +30,7 @@ export class MarketEventManager {
     return null;
   }
   
-  create_custom_event(
-    name,
-    description,
-    effect,
-    duration){
+  create_custom_event(name, description, effect, duration) {
     return {
       id: `custom-${Date.now()}`,
       name,
@@ -41,49 +41,68 @@ export class MarketEventManager {
     };
   }
   
-  get_weather_event(weather: 'sunny' | 'rainy' | 'cloudy'): MarketEvent | null {
+  get_weather_event(weather) {
     switch (weather) {
       case 'rainy':
         return this.create_custom_event(
           'Rainy Weather',
           'The rain is keeping some customers away',
           { customerMultiplier: 0.8 },
-  1;
+          1
         );
       case 'sunny':
         return this.create_custom_event(
           'Beautiful Weather',
           'The nice weather is bringing more customers out',
           { customerMultiplier: 1.2 },
-  1;
+          1
         );
       default:
         return null;
     }
   }
   
-  get_competitor_event(competitorAction): MarketEvent | null {
+  get_competitor_event(competitorAction) {
     switch (competitorAction) {
       case 'price_war':
         return this.create_custom_event(
           'Price War',
           'Competitors are slashing prices!',
           { customerMultiplier: 0.9, costMultiplier: 0.9 },
-  2;
+          2
         );
       case 'new_competitor':
         return this.create_custom_event(
           'New Competitor',
           'A new restaurant has opened nearby',
           { customerMultiplier: 0.85 },
-  3;
+          3
         );
       default:
         return null;
     }
   }
   
-  clear_events(){
+  clear_events() {
     this.activeEvents.clear();
+  }
+  
+  get_active_events() {
+    return Array.from(this.activeEvents);
+  }
+  
+  has_active_event(eventId) {
+    return this.activeEvents.has(eventId);
+  }
+  
+  force_trigger_event(eventConfig) {
+    // Force trigger a specific event regardless of probability
+    this.activeEvents.add(eventConfig.id);
+    
+    setTimeout(() => {
+      this.activeEvents.delete(eventConfig.id);
+    }, eventConfig.duration * 60 * 1000);
+    
+    return { ...eventConfig };
   }
 }

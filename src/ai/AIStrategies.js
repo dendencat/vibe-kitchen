@@ -1,5 +1,3 @@
-import { AIStrategy } from '../types/AITypes.js';
-import { GameState, Restaurant, PlayerAction } from '../types/GameTypes.js';
 import { MathUtils } from '../utils/MathUtils.js';
 
 export class AggressiveAI {

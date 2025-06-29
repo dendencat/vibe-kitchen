@@ -1,5 +1,3 @@
-import { MenuItem } from '../types/GameTypes.js';
-
 export class SecurityValidator {
   static sanitize_input(input){
     return input

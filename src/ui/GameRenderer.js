@@ -1,5 +1,3 @@
-import { GameState, Restaurant } from '../types/GameTypes.js';
-import { ChartData, CustomerSprite } from '../types/UITypes.js';
 import { GAME_CONSTANTS } from '../utils/Constants.js';
 import { SecurityValidator } from '../utils/SecurityValidator.js';
 

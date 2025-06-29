@@ -1,5 +1,3 @@
-import { Restaurant, GameState, PlayerAction } from '../types/GameTypes.js';
-import { AIStrategy } from '../types/AITypes.js';
 import { create_ai_strategy } from './AIStrategies.js';
 
 export class AIController {

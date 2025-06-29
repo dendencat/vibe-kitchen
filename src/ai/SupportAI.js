@@ -1,30 +1,63 @@
-import { GameState, Restaurant } from '../types/GameTypes.js';
-import { SupportAIAdvice, MarketAnalysis } from '../types/AITypes.js';
 import { MathUtils } from '../utils/MathUtils.js';
 
 export class SupportAI {
-  lastAdviceTime 0;
-  adviceCooldown 10000; // 10 seconds between advice
+  lastAdviceTime = 0;
+  adviceCooldown = 10000; // 10 seconds between advice
   
   generate_advice(gameState){
     const currentTime = Date.now();
-    const playerRestaurant = gameState.restaurants.find(r => r.type === 'player')!;
+    const playerRestaurant = gameState.restaurants.find(r => r.type === 'player');
     const competitors = gameState.restaurants.filter(r => r.type === 'ai');
     
+    if (!playerRestaurant) {
+      return this.get_default_advice();
+    }
+    
     // Don't give advice too frequently
-    if (currentTime - this.lastAdviceTime  30) {
+    if (currentTime - this.lastAdviceTime < this.adviceCooldown) {
+      return this.get_default_advice();
+    }
+    
+    this.lastAdviceTime = currentTime;
+    
+    // Priority 1: Cash flow issues
+    if (playerRestaurant.cash < 5000) {
+      return {
+        id: `advice-${Date.now()}`,
+        type: 'warning',
+        priority: 'high',
+        message: '💰 Cash flow is low! Consider increasing prices or launching a marketing campaign.',
+        timestamp: currentTime
+      };
+    }
+    
+    // Priority 2: Market leader domination
+    const marketLeader = this.find_market_leader(gameState);
+    if (marketLeader && marketLeader.id !== 'player' && marketLeader.marketShare > 30) {
       return {
         id: `advice-${Date.now()}`,
         type: 'warning',
         priority: 'high',
         message: `🎯 ${marketLeader.name} is dominating with ${marketLeader.marketShare.toFixed(1)}% market share! Consider aggressive marketing.`,
-        timestamp,
+        timestamp: currentTime,
         relatedCompetitor: marketLeader.id
       };
     }
     
     // Priority 3: Satisfaction issues
-    if (playerRestaurant.satisfaction  0) {
+    if (playerRestaurant.satisfaction < 70) {
+      return {
+        id: `advice-${Date.now()}`,
+        type: 'warning',
+        priority: 'medium',
+        message: `😞 Customer satisfaction is low (${playerRestaurant.satisfaction.toFixed(0)}%). Consider hiring more staff or improving menu quality.`,
+        timestamp: currentTime
+      };
+    }
+    
+    // Priority 4: Opportunities
+    const opportunities = this.identify_opportunities(gameState, playerRestaurant, competitors);
+    if (opportunities.length > 0) {
       return {
         id: `advice-${Date.now()}`,
         type: 'opportunity',
@@ -51,12 +84,14 @@ export class SupportAI {
     const sortedByRevenue = [...restaurants].sort((a, b) => b.revenue - a.revenue);
     
     // Identify trends
-    const risingTrends= [];
-    const decliningTrends= [];
+    const risingTrends = [];
+    const decliningTrends = [];
     
     // Check for fast food trend
     const fastFoodRestaurants = restaurants.filter(r => 
-      r.menu.some(item => item.cookTime  restaurants.length / 2) {
+      r.menu.some(item => item.cookTime < 10)
+    );
+    if (fastFoodRestaurants.length > restaurants.length / 2) {
       risingTrends.push('Fast food popularity');
     }
     
@@ -68,6 +103,12 @@ export class SupportAI {
       risingTrends.push('Premium dining demand');
     }
     
+    const opportunities = this.identify_opportunities(
+      gameState, 
+      gameState.restaurants.find(r => r.type === 'player'), 
+      restaurants.filter(r => r.type === 'ai')
+    );
+    
     return {
       topCompetitor: sortedByMarketShare[0].id === 'player' ? sortedByMarketShare[1].id : sortedByMarketShare[0].id,
       marketLeader: sortedByMarketShare[0].id,
@@ -78,16 +119,16 @@ export class SupportAI {
     };
   }
   
-  find_market_leader(gameState): Restaurant | null {
+  find_market_leader(gameState) {
     return gameState.restaurants.reduce((leader, restaurant) => 
-      restaurant.marketShare > leader.marketShare ? restaurant);
+      restaurant.marketShare > leader.marketShare ? restaurant : leader
+    );
   }
   
-  identify_opportunities(
-    gameState, 
-    player, 
-    competitors){
-    const opportunities= [];
+  identify_opportunities(gameState, player, competitors){
+    if (!player) return [];
+    
+    const opportunities = [];
     
     // Check for price gaps
     const avgCompetitorPrice = competitors.reduce((sum, c) => {
@@ -99,7 +140,42 @@ export class SupportAI {
     
     if (playerAvgPrice > avgCompetitorPrice * 1.2) {
       opportunities.push('Your prices are higher than competitors. Consider value promotions.');
-    } else if (playerAvgPrice  15000 && player.marketShare  c.satisfaction  item.popularity < 30)) {
+    } else if (playerAvgPrice < avgCompetitorPrice * 0.8) {
+      opportunities.push('Your prices are lower than competitors. Consider premium positioning.');
+    }
+    
+    // Check for market share opportunities
+    if (player.marketShare < 15) {
+      opportunities.push('Market share is low. Focus on customer acquisition campaigns.');
+    }
+    
+    // Check for cash opportunities
+    if (player.cash > 15000 && player.marketShare < 20) {
+      opportunities.push('You have excess cash. Consider aggressive expansion or marketing.');
+    }
+    
+    return opportunities;
+  }
+  
+  get_contextual_tips(gameState, player){
+    if (!player) return ['Keep monitoring your competitors and market trends.'];
+    
+    const tips = [];
+    
+    // Day-specific tips
+    if (gameState.currentDay <= 2) {
+      tips.push('🚀 Early game: Focus on establishing your menu and building customer base.');
+    } else if (gameState.currentDay >= 6) {
+      tips.push('⏰ Final stretch: Make bold moves to secure your position!');
+    }
+    
+    // Cash-specific tips
+    if (player.cash > 20000) {
+      tips.push('💰 You have plenty of cash. Consider expansion or premium upgrades.');
+    }
+    
+    // Menu-specific tips
+    if (player.menu.some(item => item.popularity < 30)) {
       tips.push('📊 Some menu items aren\'t popular. Consider removing or repricing them.');
     }
     

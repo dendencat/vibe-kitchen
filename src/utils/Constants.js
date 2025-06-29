@@ -1,20 +1,19 @@
-import { GameConfig, MarketEvent } from '../types/GameTypes.js';
-
-export const GAME_CONFIG= {
+export const GAME_CONFIG = {
   // Starting conditions
-  startingCash,
-  startingMenu,
-  startingStaff,
+  startingCash: 50000,
+  startingMenu: 3,
+  startingStaff: 2,
   
   // Daily costs
-  rentCost,
-  utilityCost,
-  staffCostPerDay,
+  rentCost: 2000,
+  utilityCost: 500,
+  staffCostPerDay: 1000,
   
   // Market parameters
-  maxDailyCustomers,
-  baseCustomerArrival,
+  maxDailyCustomers: 200,
+  baseCustomerArrival: 15,
   satisfactionDecayRate: 0.05,
+  eventChance: 0.1, // 10% chance per update for market events
   
   // AI difficulty scaling
   aiEfficiency: {
@@ -30,7 +29,7 @@ export const GAME_CONFIG= {
       name: "Rainy Day",
       description: "Bad weather reduces customer traffic",
       effect: { customerMultiplier: 0.7 },
-      duration,
+      duration: 0.5, // Half day
       probability: 0.2
     },
     {
@@ -38,7 +37,7 @@ export const GAME_CONFIG= {
       name: "Local Festival",
       description: "A nearby festival brings more customers",
       effect: { customerMultiplier: 1.5 },
-      duration,
+      duration: 1, // 1 day
       probability: 0.1
     },
     {
@@ -46,7 +45,7 @@ export const GAME_CONFIG= {
       name: "TV Food Show Feature",
       description: "Your restaurant was featured on TV!",
       effect: { satisfactionBonus: 0.3 },
-      duration,
+      duration: 2, // 2 days
       probability: 0.05
     },
     {
@@ -54,28 +53,36 @@ export const GAME_CONFIG= {
       name: "Ingredient Price Spike",
       description: "Supply chain issues increase costs",
       effect: { costMultiplier: 1.3 },
-      duration,
+      duration: 1, // 1 day
       probability: 0.15
+    },
+    {
+      id: 'food-critic',
+      name: "Food Critic Visit",
+      description: "A famous food critic is visiting restaurants",
+      effect: { satisfactionBonus: 0.2, customerMultiplier: 1.3 },
+      duration: 0.5, // Half day
+      probability: 0.08
     }
   ]
 };
 
 export const GAME_CONSTANTS = {
-  GAME_DURATION_SECONDS, // 7 minutes
-  SECONDS_PER_DAY,
-  DAYS_PER_GAME,
-  UPDATE_INTERVAL_MS,
-  RENDER_FPS,
-  MAX_MENU_ITEMS,
-  MAX_STAFF_PER_TYPE,
-  MIN_SATISFACTION,
-  MAX_SATISFACTION,
-  AUTOSAVE_INTERVAL_MS: 30000
+  GAME_DURATION_SECONDS: 420, // 7 minutes
+  SECONDS_PER_DAY: 60, // 1 minute per day
+  DAYS_PER_GAME: 7,
+  UPDATE_INTERVAL_MS: 1000, // Update every second
+  RENDER_FPS: 60,
+  MAX_MENU_ITEMS: 10,
+  MAX_STAFF_PER_TYPE: 5,
+  MIN_SATISFACTION: 0,
+  MAX_SATISFACTION: 100,
+  AUTOSAVE_INTERVAL_MS: 30000 // 30 seconds
 };
 
 export const AI_RESTAURANT_NAMES = {
   aggressive: "Fire Grill",
-  strategic: "Wisdom Table",
+  strategic: "Wisdom Table", 
   emotional: "Hospitality House",
   speed: "Lightning Kitchen",
   balanced: "Harmony Restaurant"
@@ -89,7 +96,7 @@ export const STARTING_MENU_ITEMS = [
     cookTime: 15
   },
   {
-    name: "Caesar Salad",
+    name: "Caesar Salad", 
     price: 8.99,
     cost: 2.50,
     cookTime: 5
@@ -101,3 +108,49 @@ export const STARTING_MENU_ITEMS = [
     cookTime: 20
   }
 ];
+
+export const STAFF_TYPES = {
+  chef: {
+    baseSalary: 3000,
+    efficiencyBoost: 1.2,
+    description: "Improves cooking speed and food quality"
+  },
+  waiter: {
+    baseSalary: 2000,
+    efficiencyBoost: 1.1,
+    description: "Improves customer service and satisfaction"
+  },
+  manager: {
+    baseSalary: 4000,
+    efficiencyBoost: 1.15,
+    description: "Improves overall restaurant efficiency"
+  }
+};
+
+export const EQUIPMENT_TYPES = {
+  kitchen: {
+    baseCost: 5000,
+    efficiencyBoost: 1.3,
+    description: "Basic kitchen equipment upgrade"
+  },
+  oven: {
+    baseCost: 8000,
+    efficiencyBoost: 1.4,
+    description: "Professional-grade oven for faster cooking"
+  },
+  grill: {
+    baseCost: 6000,
+    efficiencyBoost: 1.35,
+    description: "High-quality grill for better meat dishes"
+  },
+  fryer: {
+    baseCost: 4000,
+    efficiencyBoost: 1.25,
+    description: "Commercial fryer for crispy foods"
+  },
+  dishwasher: {
+    baseCost: 3000,
+    efficiencyBoost: 1.2,
+    description: "Automated dishwashing system"
+  }
+};

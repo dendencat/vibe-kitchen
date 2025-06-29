@@ -1,6 +1,5 @@
 import { GameEngine } from '../game/GameEngine.js';
 import { SecurityValidator } from '../utils/SecurityValidator.js';
-import { PlayerAction } from '../types/GameTypes.js';
 
 export class InputHandler {
   gameEngine;
@@ -249,7 +248,7 @@ export class InputHandler {
     // To be implemented with game engine pause functionality
   }
   
-  show_notification(message, type: 'success' | 'error' | 'info'){
+  show_notification(message, type){
     // Create notification element
     const notification = document.createElement('div');
     notification.className = `notification ${type}`;

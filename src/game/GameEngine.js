@@ -1,5 +1,4 @@
 import { GameStateManager } from './GameState.js';
-import { GameState, Restaurant, PlayerAction } from '../types/GameTypes.js';
 import { AIController } from '../ai/AIController.js';
 import { GameRenderer } from '../ui/GameRenderer.js';
 import { InputHandler } from '../ui/InputHandler.js';
