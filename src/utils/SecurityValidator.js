@@ -3,14 +3,14 @@ import { MenuItem } from '../types/GameTypes.js';
 export class SecurityValidator {
   static sanitize_input(input){
     return input
-      .replace(/[\"'&]/g, '')
+      .replace(/[\"'&<>]/g, '')
       .trim()
       .substring(0, 100);
   }
   
   static validate_number(value, min, max){
     const num = Number(value);
-    if (isNaN(num) || num  max) {
+    if (isNaN(num) || num < min || num > max) {
       throw new Error(`Invalid number: ${value}. Must be between ${min} and ${max}.`);
     }
     return num;
@@ -34,12 +34,40 @@ export class SecurityValidator {
   
   static is_safe_html_content(content){
     const dangerousPatterns = [
-      / pattern.test(content));
+      /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi,
+      /<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi,
+      /<object\b[^<]*(?:(?!<\/object>)<[^<]*)*<\/object>/gi,
+      /<embed\b[^<]*>/gi,
+      /javascript:/gi,
+      /on\w+\s*=/gi
+    ];
+    
+    return !dangerousPatterns.some(pattern => pattern.test(content));
   }
   
   static escape_html(text){
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+  }
+  
+  static validate_campaign_budget(budget, maxBudget){
+    return this.validate_number(budget, 1000, maxBudget);
+  }
+  
+  static validate_staff_type(staffType){
+    const validTypes = ['chef', 'waiter', 'manager'];
+    if (!validTypes.includes(staffType)) {
+      throw new Error(`Invalid staff type: ${staffType}. Must be one of: ${validTypes.join(', ')}`);
+    }
+    return staffType;
+  }
+  
+  static validate_equipment_type(equipmentType){
+    const validTypes = ['kitchen', 'oven', 'grill', 'fryer', 'dishwasher'];
+    if (!validTypes.includes(equipmentType)) {
+      throw new Error(`Invalid equipment type: ${equipmentType}. Must be one of: ${validTypes.join(', ')}`);
+    }
+    return equipmentType;
   }
 }
