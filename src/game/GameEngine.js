@@ -11,16 +11,16 @@ import { MathUtils } from '../utils/MathUtils.js';
 
 export class GameEngine {
   gameStateManager;
-  aiControllers [];
+  aiControllers = [];
   renderer;
   inputHandler;
   marketEventManager;
   supportAI;
-  lastUpdateTime 0;
-  accumulatedTime 0;
-  gameStartTime 0;
-  isPaused false;
-  isGameOver false;
+  lastUpdateTime = 0;
+  accumulatedTime = 0;
+  gameStartTime = 0;
+  isPaused = false;
+  isGameOver = false;
   
   constructor() {
     this.gameStateManager = new GameStateManager();
@@ -88,7 +88,9 @@ export class GameEngine {
     // Update time
     const newTimeRemaining = state.timeRemaining - 1;
     
-    if (newTimeRemaining  GAME_CONSTANTS.DAYS_PER_GAME) {
+    if (newTimeRemaining <= 0) {
+      // Check if game should end
+      if (state.currentDay > GAME_CONSTANTS.DAYS_PER_GAME) {
         this.end_game();
         return;
       }
@@ -195,7 +197,15 @@ export class GameEngine {
     const state = this.gameStateManager.get_state();
     
     // Random chance for new events
-    if (Math.random()  {
+    if (Math.random() < GAME_CONFIG.eventChance) {
+      const newEvent = this.marketEventManager.generate_random_event();
+      if (newEvent) {
+        this.gameStateManager.add_market_event(newEvent);
+      }
+    }
+    
+    // Update existing events
+    state.marketEvents.forEach(event => {
       event.duration -= 1 / GAME_CONSTANTS.SECONDS_PER_DAY;
     });
     
@@ -254,8 +264,8 @@ export class GameEngine {
         const newItem = {
           id: `menu-${Date.now()}`,
           ...validatedItem,
-          popularity,
-          profitMargin: MathUtils.calculate_profit_margin(validatedItem.price!, validatedItem.cost!),
+          popularity: 50,
+          profitMargin: MathUtils.calculate_profit_margin(validatedItem.price, validatedItem.cost),
           customerRating: 4.0
         };
         restaurant.menu.push(newItem);
