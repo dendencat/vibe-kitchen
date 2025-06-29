@@ -131,7 +131,7 @@ export class InputHandler {
       const action= {
         type: 'menu',
         action: 'add_item',
-        parameters,
+        parameters: validatedItem,
         timestamp: Date.now()
       };
       

@@ -8,16 +8,16 @@ export class GameStateManager {
   }
   
   initialize_game_state(){
-    const restaurants= [
+    const restaurants = [
       this.create_player_restaurant(),
       ...this.create_ai_restaurants()
     ];
     
     return {
-      currentDay,
-      timeRemaining,
+      currentDay: 1,
+      timeRemaining: GAME_CONFIG.SECONDS_PER_DAY || 60,
       restaurants,
-      marketEvents,
+      marketEvents: [],
       weatherCondition: 'sunny',
       globalMarketTrends: []
     };
@@ -28,12 +28,12 @@ export class GameStateManager {
       id: 'player',
       name: 'Your Restaurant',
       type: 'player',
-      revenue,
-      expenses,
+      revenue: 0,
+      expenses: 0,
       cash: GAME_CONFIG.startingCash,
-      dailyProfit,
-      customerCount,
-      satisfaction,
+      dailyProfit: 0,
+      customerCount: 0,
+      satisfaction: 75,
       marketShare: 16.67, // Equal share among 6 restaurants
       efficiency: 1.0,
       staff: this.create_starting_staff(),
@@ -43,19 +43,18 @@ export class GameStateManager {
   }
   
   create_ai_restaurants(){
-    const types= 
-      ['aggressive', 'strategic', 'emotional', 'speed', 'balanced'];
+    const types = ['aggressive', 'strategic', 'emotional', 'speed', 'balanced'];
     
     return types.map(type => ({
       id: `ai-${type}`,
-      name,
+      name: AI_RESTAURANT_NAMES[type],
       type: 'ai',
-      revenue,
-      expenses,
+      revenue: 0,
+      expenses: 0,
       cash: GAME_CONFIG.startingCash,
-      dailyProfit,
-      customerCount,
-      satisfaction,
+      dailyProfit: 0,
+      customerCount: 0,
+      satisfaction: 75,
       marketShare: 16.67,
       efficiency: 1.0,
       staff: this.create_starting_staff(),
@@ -71,7 +70,7 @@ export class GameStateManager {
         id: 'staff-1',
         name: 'Head Chef',
         type: 'chef',
-        salary,
+        salary: 3000,
         efficiency: 1.0,
         experience: 50
       },
@@ -79,7 +78,7 @@ export class GameStateManager {
         id: 'staff-2',
         name: 'Server',
         type: 'waiter',
-        salary,
+        salary: 2500,
         efficiency: 1.0,
         experience: 30
       }
@@ -93,7 +92,7 @@ export class GameStateManager {
       price: item.price,
       cost: item.cost,
       cookTime: item.cookTime,
-      popularity,
+      popularity: item.popularity || 60,
       profitMargin: MathUtils.calculate_profit_margin(item.price, item.cost),
       customerRating: 4.0
     }));
@@ -105,7 +104,7 @@ export class GameStateManager {
         id: 'equip-1',
         name: 'Basic Kitchen',
         type: 'kitchen',
-        level,
+        level: 1,
         efficiencyBoost: 1.0,
         maintenanceCost: 100
       }
