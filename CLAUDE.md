@@ -483,7 +483,7 @@ class SecurityValidator {
 ## File Structure
 
 ```
-ai-restaurant-battle/
+.
 ├── index.html
 ├── claude.md
 ├── styles/

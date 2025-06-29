@@ -1,0 +1,39 @@
+{
+  "name": "ai-restaurant-battle",
+  "version": "1.0.0",
+  "description": "AI Restaurant Battle - Competitive restaurant management game",
+  "type": "module",
+  "scripts": {
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest --coverage",
+    "test:watch": "vitest --watch",
+    "build": "node build.js",
+    "dev": "python3 -m http.server 8080",
+    "lint": "eslint src/**/*.ts",
+    "typecheck": "tsc --noEmit",
+    "prettier": "prettier --write src/**/*.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "@vitest/coverage-v8": "^1.0.0",
+    "@vitest/ui": "^1.0.0",
+    "eslint": "^8.0.0",
+    "jsdom": "^23.0.0",
+    "prettier": "^3.0.0",
+    "typescript": "^5.0.0",
+    "vitest": "^1.0.0"
+  },
+  "keywords": [
+    "game",
+    "ai",
+    "restaurant",
+    "management",
+    "typescript",
+    "browser"
+  ],
+  "author": "AI Restaurant Battle Team",
+  "license": "MIT"
+}
