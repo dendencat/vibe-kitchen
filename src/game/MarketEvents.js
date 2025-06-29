@@ -1,8 +1,9 @@
+import { MarketEvent } from '../types/GameTypes.js';
 import { GAME_CONFIG } from '../utils/Constants.js';
 import { MathUtils } from '../utils/MathUtils.js';
 
 export class MarketEventManager {
-  activeEvents= new Set();
+  activeEvents new Set();
   
   generate_random_event(): MarketEvent | null {
     // Filter events that aren't already active
@@ -29,33 +30,35 @@ export class MarketEventManager {
     name,
     description,
     effect,
-    duration): MarketEvent {
+    duration){
     return {
-      id)}`,
+      id: `custom-${Date.now()}`,
       name,
       description,
       effect,
       duration,
-      probability;
+      probability: 1.0 // Custom events always trigger
+    };
   }
   
-  get_weather_event(weather): MarketEvent | null {
+  get_weather_event(weather: 'sunny' | 'rainy' | 'cloudy'): MarketEvent | null {
     switch (weather) {
       case 'rainy':
         return this.create_custom_event(
           'Rainy Weather',
           'The rain is keeping some customers away',
-          { customerMultiplier,
-          1
+          { customerMultiplier: 0.8 },
+  1;
         );
       case 'sunny':
         return this.create_custom_event(
           'Beautiful Weather',
           'The nice weather is bringing more customers out',
-          { customerMultiplier,
-          1
+          { customerMultiplier: 1.2 },
+  1;
         );
-      default;
+      default:
+        return null;
     }
   }
   
@@ -65,21 +68,22 @@ export class MarketEventManager {
         return this.create_custom_event(
           'Price War',
           'Competitors are slashing prices!',
-          { customerMultiplier, costMultiplier,
-          2
+          { customerMultiplier: 0.9, costMultiplier: 0.9 },
+  2;
         );
       case 'new_competitor':
         return this.create_custom_event(
           'New Competitor',
-          'A new restaurant h nearby',
-          { customerMultiplier,
-          3
+          'A new restaurant has opened nearby',
+          { customerMultiplier: 0.85 },
+  3;
         );
-      default;
+      default:
+        return null;
     }
   }
   
-  clear_events(): void {
+  clear_events(){
     this.activeEvents.clear();
   }
 }

@@ -1,17 +1,19 @@
+import { Restaurant, GameState, PlayerAction } from '../types/GameTypes.js';
+import { AIStrategy } from '../types/AITypes.js';
 import { create_ai_strategy } from './AIStrategies.js';
 
 export class AIController {
   restaurant;
   strategy;
-  lastActionTime= 0;
-  actionCooldown= 5000; // 5 seconds between major actions
+  lastActionTime 0;
+  actionCooldown 5000; // 5 seconds between major actions
   
   constructor(restaurant) {
     this.restaurant = restaurant;
     this.strategy = create_ai_strategy(restaurant.strategyType || 'balanced');
   }
   
-  make_decisions(gameState): PlayerAction[] {
+  make_decisions(gameState){
     const currentTime = Date.now();
     
     // Don't make decisions too frequently
@@ -22,9 +24,9 @@ export class AIController {
     return validActions;
   }
   
-  filter_valid_actions(actions): PlayerAction[] {
+  filter_valid_actions(actions){
     return actions.filter(action => {
-      // Check if restaurant h cash for the action
+      // Check if restaurant has enough cash for the action
       if (action.type === 'marketing' && action.parameters.budget) {
         return this.restaurant.cash >= action.parameters.budget;
       }
@@ -39,11 +41,11 @@ export class AIController {
     });
   }
   
-  get_restaurant_id(): string {
+  get_restaurant_id(){
     return this.restaurant.id;
   }
   
-  update_restaurant_reference(restaurant): void {
+  update_restaurant_reference(restaurant){
     this.restaurant = restaurant;
   }
 }

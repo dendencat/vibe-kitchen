@@ -1,10 +1,12 @@
+import { GameState, Restaurant } from '../types/GameTypes.js';
+import { SupportAIAdvice, MarketAnalysis } from '../types/AITypes.js';
 import { MathUtils } from '../utils/MathUtils.js';
 
 export class SupportAI {
-  lastAdviceTime= 0;
-  adviceCooldown= 10000; // 10 seconds between advice
+  lastAdviceTime 0;
+  adviceCooldown 10000; // 10 seconds between advice
   
-  generate_advice(gameState): SupportAIAdvice {
+  generate_advice(gameState){
     const currentTime = Date.now();
     const playerRestaurant = gameState.restaurants.find(r => r.type === 'player')!;
     const competitors = gameState.restaurants.filter(r => r.type === 'ai');
@@ -12,33 +14,38 @@ export class SupportAI {
     // Don't give advice too frequently
     if (currentTime - this.lastAdviceTime  30) {
       return {
-        id)}`,
-        type,
-        priority,
-        message)}% market share! Consider aggressive marketing.`,
+        id: `advice-${Date.now()}`,
+        type: 'warning',
+        priority: 'high',
+        message: `🎯 ${marketLeader.name} is dominating with ${marketLeader.marketShare.toFixed(1)}% market share! Consider aggressive marketing.`,
         timestamp,
-        relatedCompetitor;
+        relatedCompetitor: marketLeader.id
+      };
     }
     
-    // Priority 3) {
+    // Priority 3: Satisfaction issues
+    if (playerRestaurant.satisfaction  0) {
       return {
-        id)}`,
-        type,
-        priority,
-        message,
-        timestamp;
+        id: `advice-${Date.now()}`,
+        type: 'opportunity',
+        priority: 'medium',
+        message: `💡 ${opportunities[0]}`,
+        timestamp: currentTime
+      };
     }
     
-    // Priority 5= this.get_contextual_tips(gameState, playerRestaurant);
+    // Priority 5: General tips
+    const tips = this.get_contextual_tips(gameState, playerRestaurant);
     return {
-      id)}`,
-      type,
-      priority,
-      message, tips.length - 1)],
-      timestamp;
+      id: `advice-${Date.now()}`,
+      type: 'tip',
+      priority: 'low',
+      message: tips[MathUtils.random_int(0, tips.length - 1)],
+      timestamp: currentTime
+    };
   }
   
-  analyze_market(gameState): MarketAnalysis {
+  analyze_market(gameState){
     const restaurants = gameState.restaurants;
     const sortedByMarketShare = [...restaurants].sort((a, b) => b.marketShare - a.marketShare);
     const sortedByRevenue = [...restaurants].sort((a, b) => b.revenue - a.revenue);
@@ -62,24 +69,24 @@ export class SupportAI {
     }
     
     return {
-      topCompetitor=== 'player' ? sortedByMarketShare[1].id : sortedByMarketShare[0].id,
-      marketLeader,
+      topCompetitor: sortedByMarketShare[0].id === 'player' ? sortedByMarketShare[1].id : sortedByMarketShare[0].id,
+      marketLeader: sortedByMarketShare[0].id,
       risingTrends,
       decliningTrends,
       opportunities,
-      threats;
+      threats: []
+    };
   }
   
   find_market_leader(gameState): Restaurant | null {
     return gameState.restaurants.reduce((leader, restaurant) => 
-      restaurant.marketShare > leader.marketShare ? restaurant : leader
-    );
+      restaurant.marketShare > leader.marketShare ? restaurant);
   }
   
   identify_opportunities(
     gameState, 
     player, 
-    competitors): string[] {
+    competitors){
     const opportunities= [];
     
     // Check for price gaps
@@ -106,17 +113,17 @@ export class SupportAI {
     return tips;
   }
   
-  get_default_advice(): SupportAIAdvice {
+  get_default_advice(){
     return {
-      id)}`,
-      type,
-      priority,
-      message,
-      timestamp)
+      id: `advice-default-${Date.now()}`,
+      type: 'tip',
+      priority: 'low',
+      message: '💡 Keep monitoring your competitors and market trends.',
+      timestamp: Date.now()
     };
   }
   
-  get_market_analysis(gameState): MarketAnalysis {
+  get_market_analysis(gameState){
     return this.analyze_market(gameState);
   }
 }

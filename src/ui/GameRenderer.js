@@ -1,3 +1,5 @@
+import { GameState, Restaurant } from '../types/GameTypes.js';
+import { ChartData, CustomerSprite } from '../types/UITypes.js';
 import { GAME_CONSTANTS } from '../utils/Constants.js';
 import { SecurityValidator } from '../utils/SecurityValidator.js';
 
@@ -6,21 +8,20 @@ export class GameRenderer {
   restaurantCanvas;
   revenueChartCtx;
   restaurantCtx;
-  
-  customerSprites= [];
-  revenueHistory= new Map();
-  lastRenderTime= 0;
+  customerSprites [];
+  revenueHistory new Map();
+  lastRenderTime 0;
   
   constructor() {
-    this.revenueChartCanvas = document.getElementById('revenue-chart-canvas') ;
-    this.restaurantCanvas = document.getElementById('restaurant-canvas') ;
+    this.revenueChartCanvas = document.getElementById('revenue-chart-canvas');
+    this.restaurantCanvas = document.getElementById('restaurant-canvas');
     this.revenueChartCtx = this.revenueChartCanvas.getContext('2d')!;
     this.restaurantCtx = this.restaurantCanvas.getContext('2d')!;
     
     this.initialize_revenue_history();
   }
   
-  initialize_revenue_history(): void {
+  initialize_revenue_history(){
     // Initialize empty revenue history for all restaurants
     for (let i = 0; i  b.marketShare - a.marketShare);
     
@@ -33,7 +34,7 @@ export class GameRenderer {
     `).join('');
   }
   
-  update_restaurant_stats(gameState): void {
+  update_restaurant_stats(gameState){
     const player = gameState.restaurants.find(r => r.type === 'player')!;
     
     document.getElementById('cash-display')!.textContent = `$${player.cash.toFixed(2)}`;
@@ -41,56 +42,54 @@ export class GameRenderer {
     document.getElementById('satisfaction-display')!.textContent = `${player.satisfaction.toFixed(0)}%`;
   }
   
-  update_competitor_cards(gameState): void {
+  update_competitor_cards(gameState){
     const competitorGrid = document.getElementById('competitor-grid')!;
     const competitors = gameState.restaurants.filter(r => r.type === 'ai');
     
     competitorGrid.innerHTML = competitors.map(competitor => `
       
         ${SecurityValidator.escape_html(competitor.name)}
-        
-          
-            Market Share)}%
-          
-          
-            Revenue)}
-          
-          
-            Satisfaction)}%
-          
-          
-            Strategy).join('');
+
+            Market Share:
+            ${competitor.marketShare.toFixed(1)}%
+
+            Revenue:
+            $${competitor.revenue.toFixed(0)}
+
+            Satisfaction:
+            ${competitor.satisfaction.toFixed(0)}%
+
+            Strategy:
+            ${competitor.strategyType}
+
+    `).join('');
   }
   
-  update_menu_display(gameState): void {
+  update_menu_display(gameState){
     const player = gameState.restaurants.find(r => r.type === 'player')!;
     const menuList = document.getElementById('menu-items')!;
     
     menuList.innerHTML = player.menu.map(item => `
-      
-        
+
           ${SecurityValidator.escape_html(item.name)}
           $${item.price.toFixed(2)}
-        
-        
-          Pop)}%
+
+          Pop: ${item.popularity.toFixed(0)}%
           ★${item.customerRating.toFixed(1)}
-          Profit)}%
-        
-        
+          Profit: ${item.profitMargin.toFixed(0)}%
+
           Update Price
-          Remove
-        
-      
+  Remove;
     `).join('');
   }
   
-  render_revenue_chart(gameState): void {
+  render_revenue_chart(gameState){
     const ctx = this.revenueChartCtx;
     const width = this.revenueChartCanvas.width;
     const height = this.revenueChartCanvas.height;
     
-    // Clear canv.clearRect(0, 0, width, height);
+    // Clear canvas
+    ctx.clearRect(0, 0, width, height);
     
     // Update revenue history
     gameState.restaurants.forEach((restaurant, index) => {
@@ -107,7 +106,7 @@ export class GameRenderer {
     gameState.restaurants.forEach((restaurant, index) => {
       const history = this.revenueHistory.get(`restaurant-${index}`) || [];
       ctx.strokeStyle = colors[index];
-      ctx.lineWidth = restaurant.type === 'player' ? 3 ;
+      ctx.lineWidth = restaurant.type === 'player' ? 3 : 1;
       
       ctx.beginPath();
       history.forEach((revenue, i) => {
@@ -120,12 +119,13 @@ export class GameRenderer {
     });
   }
   
-  render_restaurant_view(gameState, deltaTime): void {
+  render_restaurant_view(gameState, deltaTime){
     const ctx = this.restaurantCtx;
     const width = this.restaurantCanvas.width;
     const height = this.restaurantCanvas.height;
     
-    // Clear canv.fillStyle = '#f0f0f0';
+    // Clear canvas
+    ctx.fillStyle = '#f0f0f0';
     ctx.fillRect(0, 0, width, height);
     
     // Draw restaurant floor
@@ -145,12 +145,13 @@ export class GameRenderer {
     
     // Draw tables
     const tables = [
-      { x, y,
-      { x, y,
-      { x, y,
-      { x, y,
-      { x, y,
-      { x, y;
+      { x, y: 150 },
+      { x, y: 150 },
+      { x, y: 150 },
+      { x, y: 250 },
+      { x, y: 250 },
+      { x, y: 250 }
+    ];
     
     tables.forEach(table => {
       ctx.fillStyle = '#8b4513';
@@ -168,7 +169,7 @@ export class GameRenderer {
     }
   }
   
-  update_customer_sprites(gameState, deltaTime): void {
+  update_customer_sprites(gameState, deltaTime){
     const player = gameState.restaurants.find(r => r.type === 'player')!;
     
     // Add new customers based on arrival rate
@@ -213,9 +214,9 @@ export class GameRenderer {
     });
   }
   
-  draw_customer_sprites(ctx): void {
+  draw_customer_sprites(ctx){
     this.customerSprites.forEach(sprite => {
-      // Draw customer 
+      // Draw customer
       ctx.beginPath();
       ctx.arc(sprite.x, sprite.y, 10, 0, Math.PI * 2);
       
@@ -244,13 +245,13 @@ export class GameRenderer {
     });
   }
   
-  update_advice(advice): void {
+  update_advice(advice){
     const adviceContent = document.getElementById('advice-content')!;
     adviceContent.innerHTML = SecurityValidator.escape_html(advice.message);
     adviceContent.className = `advice-content ${advice.type} ${advice.priority}`;
   }
   
-  show_game_over(results): void {
+  show_game_over(results){
     const gameOverScreen = document.getElementById('game-over')!;
     const finalResults = document.getElementById('final-results')!;
     
@@ -260,11 +261,12 @@ export class GameRenderer {
         
           #${index + 1}
           ${SecurityValidator.escape_html(result.name)}
-          Score)}%
-            Revenue)}
-            Satisfaction)}%
+          Score: ${result.score}
           
-        
+            Market Share: ${result.marketShare.toFixed(1)}%
+            Revenue: $${result.revenue.toFixed(0)}
+            Satisfaction: ${result.satisfaction.toFixed(0)}%
+
       `).join('')}
     `;
     

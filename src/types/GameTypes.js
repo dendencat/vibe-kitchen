@@ -1,23 +1,2 @@
 
 
-
-
-
-
-
-
-
-
-;
-  duration;
-  probability;
-}
-
-
-
-
-
-;
-  events;
-}
-

@@ -1,14 +1,14 @@
+import { GameState, Restaurant, MarketEvent, MenuItem } from '../types/GameTypes.js';
 import { GAME_CONFIG, STARTING_MENU_ITEMS, AI_RESTAURANT_NAMES } from '../utils/Constants.js';
 import { MathUtils } from '../utils/MathUtils.js';
 
 export class GameStateManager {
   state;
-  
   constructor() {
     this.state = this.initialize_game_state();
   }
   
-  initialize_game_state(): GameState {
+  initialize_game_state(){
     const restaurants= [
       this.create_player_restaurant(),
       ...this.create_ai_restaurants()
@@ -19,97 +19,105 @@ export class GameStateManager {
       timeRemaining,
       restaurants,
       marketEvents,
-      weatherCondition,
-      globalMarketTrends;
-  }
-  
-  create_player_restaurant(): Restaurant {
-    return {
-      id,
-      name,
-      type,
-      revenue,
-      expenses,
-      cash,
-      dailyProfit,
-      customerCount,
-      satisfaction,
-      marketShare, // Equal share among 6 restaurants
-      efficiency,
-      staff),
-      menu),
-      equipment)
+      weatherCondition: 'sunny',
+      globalMarketTrends: []
     };
   }
   
-  create_ai_restaurants(): Restaurant[] {
+  create_player_restaurant(){
+    return {
+      id: 'player',
+      name: 'Your Restaurant',
+      type: 'player',
+      revenue,
+      expenses,
+      cash: GAME_CONFIG.startingCash,
+      dailyProfit,
+      customerCount,
+      satisfaction,
+      marketShare: 16.67, // Equal share among 6 restaurants
+      efficiency: 1.0,
+      staff: this.create_starting_staff(),
+      menu: this.create_starting_menu(),
+      equipment: this.create_starting_equipment()
+    };
+  }
+  
+  create_ai_restaurants(){
     const types= 
       ['aggressive', 'strategic', 'emotional', 'speed', 'balanced'];
     
     return types.map(type => ({
-      id,
+      id: `ai-${type}`,
       name,
-      type,
+      type: 'ai',
       revenue,
       expenses,
-      cash,
+      cash: GAME_CONFIG.startingCash,
       dailyProfit,
       customerCount,
       satisfaction,
-      marketShare,
-      efficiency,
-      staff),
-      menu),
-      equipment),
-      strategyType));
+      marketShare: 16.67,
+      efficiency: 1.0,
+      staff: this.create_starting_staff(),
+      menu: this.create_starting_menu(),
+      equipment: this.create_starting_equipment(),
+      strategyType: type
+    }));
   }
   
   create_starting_staff() {
     return [
       {
-        id,
-        name,
-        type,
+        id: 'staff-1',
+        name: 'Head Chef',
+        type: 'chef',
         salary,
-        efficiency,
-        experience,
+        efficiency: 1.0,
+        experience: 50
+      },
       {
-        id,
-        name,
-        type,
+        id: 'staff-2',
+        name: 'Server',
+        type: 'waiter',
         salary,
-        efficiency,
-        experience;
+        efficiency: 1.0,
+        experience: 30
+      }
+    ];
   }
   
-  create_starting_menu(): MenuItem[] {
+  create_starting_menu(){
     return STARTING_MENU_ITEMS.map((item, index) => ({
-      id,
-      name,
-      price,
-      cost,
-      cookTime,
+      id: `menu-${index}`,
+      name: item.name,
+      price: item.price,
+      cost: item.cost,
+      cookTime: item.cookTime,
       popularity,
-      profitMargin, item.cost),
-      customerRating));
+      profitMargin: MathUtils.calculate_profit_margin(item.price, item.cost),
+      customerRating: 4.0
+    }));
   }
   
   create_starting_equipment() {
     return [
       {
-        id,
-        name,
-        type,
+        id: 'equip-1',
+        name: 'Basic Kitchen',
+        type: 'kitchen',
         level,
-        efficiencyBoost,
-        maintenanceCost;
+        efficiencyBoost: 1.0,
+        maintenanceCost: 100
+      }
+    ];
   }
   
-  get_state(): GameState {
+  get_state(){
     return this.state;
   }
   
-  update_state(updates): void {
+  update_state(updates){
     this.state = { ...this.state, ...updates };
   }
   
@@ -117,7 +125,7 @@ export class GameStateManager {
     return this.state.restaurants.find(r => r.id === id);
   }
   
-  update_restaurant(id, updates): void {
+  update_restaurant(id, updates){
     const index = this.state.restaurants.findIndex(r => r.id === id);
     if (index !== -1) {
       this.state.restaurants[index] = {
@@ -127,15 +135,15 @@ export class GameStateManager {
     }
   }
   
-  add_market_event(event): void {
+  add_market_event(event){
     this.state.marketEvents.push(event);
   }
   
-  remove_expired_events(): void {
+  remove_expired_events(){
     this.state.marketEvents = this.state.marketEvents.filter(e => e.duration > 0);
   }
   
-  calculate_market_shares(): void {
+  calculate_market_shares(){
     const shares = MathUtils.calculate_market_share(this.state.restaurants);
     this.state.restaurants.forEach((restaurant, index) => {
       restaurant.marketShare = shares[index];

@@ -1,14 +1,14 @@
 import { GameEngine } from '../game/GameEngine.js';
 import { SecurityValidator } from '../utils/SecurityValidator.js';
+import { PlayerAction } from '../types/GameTypes.js';
 
 export class InputHandler {
   gameEngine;
-  
   constructor(gameEngine) {
     this.gameEngine = gameEngine;
   }
   
-  initialize(): void {
+  initialize(){
     this.setup_menu_controls();
     this.setup_marketing_controls();
     this.setup_operations_controls();
@@ -16,7 +16,7 @@ export class InputHandler {
     this.setup_game_controls();
   }
   
-  setup_menu_controls(): void {
+  setup_menu_controls(){
     // Add menu item button
     const addMenuBtn = document.getElementById('add-menu-item');
     if (addMenuBtn) {
@@ -36,7 +36,7 @@ export class InputHandler {
     
     // Dynamic menu item controls
     document.addEventListener('click', (e) => {
-      const target = e.target ;
+      const target = e.target;
       
       if (target.classList.contains('update-price')) {
         const itemId = target.dataset.itemId;
@@ -50,7 +50,7 @@ export class InputHandler {
     });
   }
   
-  setup_marketing_controls(): void {
+  setup_marketing_controls(){
     const launchCampaignBtn = document.getElementById('launch-campaign');
     if (launchCampaignBtn) {
       launchCampaignBtn.addEventListener('click', () => {
@@ -59,7 +59,7 @@ export class InputHandler {
     }
   }
   
-  setup_operations_controls(): void {
+  setup_operations_controls(){
     const hireStaffBtn = document.getElementById('hire-staff');
     if (hireStaffBtn) {
       hireStaffBtn.addEventListener('click', () => {
@@ -75,7 +75,7 @@ export class InputHandler {
     }
   }
   
-  setup_modal_controls(): void {
+  setup_modal_controls(){
     const cancelMenuBtn = document.getElementById('cancel-menu');
     if (cancelMenuBtn) {
       cancelMenuBtn.addEventListener('click', () => {
@@ -86,14 +86,14 @@ export class InputHandler {
     
     // Close modal on outside click
     document.addEventListener('click', (e) => {
-      const target = e.target ;
+      const target = e.target;
       if (target.classList.contains('modal')) {
         target.classList.add('hidden');
       }
     });
   }
   
-  setup_game_controls(): void {
+  setup_game_controls(){
     const restartBtn = document.getElementById('restart-game');
     if (restartBtn) {
       restartBtn.addEventListener('click', () => {
@@ -115,25 +115,25 @@ export class InputHandler {
     });
   }
   
-  handle_add_menu_item(): void {
+  handle_add_menu_item(){
     try {
-      const nameInput = document.getElementById('item-name') ;
-      const priceInput = document.getElementById('item-price') ;
-      const costInput = document.getElementById('item-cost') ;
-      const cookTimeInput = document.getElementById('item-cooktime') ;
+      const nameInput = document.getElementById('item-name');
+      const priceInput = document.getElementById('item-price');
+      const costInput = document.getElementById('item-cost');
+      const cookTimeInput = document.getElementById('item-cooktime');
       
       const validatedItem = SecurityValidator.validate_menu_item_input({
-        name,
-        price),
-        cost),
-        cookTime)
+        name: nameInput.value,
+        price: parseFloat(priceInput.value),
+        cost: parseFloat(costInput.value),
+        cookTime: parseInt(cookTimeInput.value)
       });
       
       const action= {
-        type,
-        action,
+        type: 'menu',
+        action: 'add_item',
         parameters,
-        timestamp)
+        timestamp: Date.now()
       };
       
       this.gameEngine.execute_action('player', action);
@@ -148,18 +148,18 @@ export class InputHandler {
     }
   }
   
-  handle_update_price(itemId): void {
-    const newPriceStr = prompt('Enter new price);
+  handle_update_price(itemId){
+    const newPriceStr = prompt('Enter new price:');
     if (!newPriceStr) return;
     
     try {
       const newPrice = SecurityValidator.validate_number(parseFloat(newPriceStr), 1, 1000);
       
       const action= {
-        type,
-        action,
-        parameters, price,
-        timestamp)
+        type: 'menu',
+        action: 'update_price',
+        parameters: { itemId, price: newPrice },
+        timestamp: Date.now()
       };
       
       this.gameEngine.execute_action('player', action);
@@ -169,13 +169,13 @@ export class InputHandler {
     }
   }
   
-  handle_remove_item(itemId): void {
+  handle_remove_item(itemId){
     if (confirm('Are you sure you want to remove this item?')) {
       const action= {
-        type,
-        action,
-        parameters,
-        timestamp)
+        type: 'menu',
+        action: 'remove_item',
+        parameters: { itemId },
+        timestamp: Date.now()
       };
       
       this.gameEngine.execute_action('player', action);
@@ -183,7 +183,7 @@ export class InputHandler {
     }
   }
   
-  handle_launch_campaign(): void {
+  handle_launch_campaign(){
     const budgetStr = prompt('Enter marketing budget ($1000-$20000):');
     if (!budgetStr) return;
     
@@ -191,63 +191,65 @@ export class InputHandler {
       const budget = SecurityValidator.validate_number(parseFloat(budgetStr), 1000, 20000);
       
       const action= {
-        type,
-        action,
-        parameters,
+        type: 'marketing',
+        action: 'launch_campaign',
+        parameters: {
+          campaignType: 'general',
           budget,
-          duration,
-        timestamp)
+          duration: 3
+        },
+        timestamp: Date.now()
       };
       
       this.gameEngine.execute_action('player', action);
-      this.show_notification(`Marketing campaign launched! Budget, 'success');
+      this.show_notification(`Marketing campaign launched! Budget: $${budget}`, 'success');
     } catch (error) {
       this.show_notification(error.message, 'error');
     }
   }
   
-  handle_hire_staff(): void {
+  handle_hire_staff(){
     const staffType = confirm('Hire a chef? (OK for chef, Cancel for waiter)') ? 'chef' : 'waiter';
     
     const action= {
-      type,
-      action,
-      parameters,
-      timestamp)
+      type: 'operations',
+      action: 'hire_staff',
+      parameters: { staffType },
+      timestamp: Date.now()
     };
     
     this.gameEngine.execute_action('player', action);
     this.show_notification(`New ${staffType} hired!`, 'success');
   }
   
-  handle_upgrade_equipment(): void {
+  handle_upgrade_equipment(){
     const action= {
-      type,
-      action,
-      parameters,
-      timestamp)
+      type: 'operations',
+      action: 'upgrade_equipment',
+      parameters: { equipmentType: 'kitchen' },
+      timestamp: Date.now()
     };
     
     this.gameEngine.execute_action('player', action);
     this.show_notification('Equipment upgraded!', 'success');
   }
   
-  clear_menu_form(): void {
-    const form = document.getElementById('menu-item-form') ;
+  clear_menu_form(){
+    const form = document.getElementById('menu-item-form');
     if (form) form.reset();
   }
   
-  close_all_modals(): void {
+  close_all_modals(){
     document.querySelectorAll('.modal').forEach(modal => {
       modal.classList.add('hidden');
     });
   }
   
-  toggle_pause(): void {
+  toggle_pause(){
     // To be implemented with game engine pause functionality
   }
   
-  show_notification(message, type): void {
+  show_notification(message, type: 'success' | 'error' | 'info'){
     // Create notification element
     const notification = document.createElement('div');
     notification.className = `notification ${type}`;
