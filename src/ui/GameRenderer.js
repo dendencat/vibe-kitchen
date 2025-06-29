@@ -8,82 +8,148 @@ export class GameRenderer {
   restaurantCanvas;
   revenueChartCtx;
   restaurantCtx;
-  customerSprites [];
-  revenueHistory new Map();
-  lastRenderTime 0;
+  customerSprites = [];
+  revenueHistory = new Map();
+  lastRenderTime = 0;
   
   constructor() {
     this.revenueChartCanvas = document.getElementById('revenue-chart-canvas');
     this.restaurantCanvas = document.getElementById('restaurant-canvas');
-    this.revenueChartCtx = this.revenueChartCanvas.getContext('2d')!;
-    this.restaurantCtx = this.restaurantCanvas.getContext('2d')!;
+    this.revenueChartCtx = this.revenueChartCanvas?.getContext('2d');
+    this.restaurantCtx = this.restaurantCanvas?.getContext('2d');
     
     this.initialize_revenue_history();
   }
   
   initialize_revenue_history(){
     // Initialize empty revenue history for all restaurants
-    for (let i = 0; i  b.marketShare - a.marketShare);
+    for (let i = 0; i < 6; i++) {
+      this.revenueHistory.set(`restaurant-${i}`, []);
+    }
+  }
+  
+  render(gameState){
+    // Update UI elements
+    this.update_game_timer(gameState);
+    this.update_ranking_display(gameState);
+    this.update_restaurant_stats(gameState);
+    this.update_competitor_cards(gameState);
+    this.update_menu_display(gameState);
+    
+    // Render charts and visuals
+    this.render_revenue_chart(gameState);
+    this.render_restaurant_view(gameState, 16); // Assume 60 FPS
+  }
+  
+  update_game_timer(gameState){
+    const dayCounter = document.getElementById('day-counter');
+    const timeRemaining = document.getElementById('time-remaining');
+    
+    if (dayCounter) {
+      dayCounter.textContent = `Day ${gameState.currentDay}`;
+    }
+    
+    if (timeRemaining) {
+      const minutes = Math.floor(gameState.timeRemaining / 60);
+      const seconds = gameState.timeRemaining % 60;
+      timeRemaining.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    }
+  }
+  
+  update_ranking_display(gameState){
+    const rankingList = document.getElementById('ranking-list');
+    if (!rankingList) return;
+    
+    const sortedRestaurants = [...gameState.restaurants].sort((a, b) => b.marketShare - a.marketShare);
     
     rankingList.innerHTML = sortedRestaurants.map((restaurant, index) => `
-      
-        #${index + 1}
-        ${SecurityValidator.escape_html(restaurant.name)}
-        ${restaurant.marketShare.toFixed(1)}%
-      
+      <div class="ranking-item ${restaurant.type === 'player' ? 'player' : 'ai'}">
+        <span class="rank">#${index + 1}</span>
+        <span class="name">${SecurityValidator.escape_html(restaurant.name)}</span>
+        <span class="share">${restaurant.marketShare.toFixed(1)}%</span>
+      </div>
     `).join('');
   }
   
   update_restaurant_stats(gameState){
-    const player = gameState.restaurants.find(r => r.type === 'player')!;
+    const player = gameState.restaurants.find(r => r.type === 'player');
+    if (!player) return;
     
-    document.getElementById('cash-display')!.textContent = `$${player.cash.toFixed(2)}`;
-    document.getElementById('customer-count')!.textContent = player.customerCount.toString();
-    document.getElementById('satisfaction-display')!.textContent = `${player.satisfaction.toFixed(0)}%`;
+    const cashDisplay = document.getElementById('cash-display');
+    const customerCount = document.getElementById('customer-count');
+    const satisfactionDisplay = document.getElementById('satisfaction-display');
+    
+    if (cashDisplay) {
+      cashDisplay.textContent = `$${player.cash.toFixed(2)}`;
+    }
+    if (customerCount) {
+      customerCount.textContent = player.customerCount.toString();
+    }
+    if (satisfactionDisplay) {
+      satisfactionDisplay.textContent = `${player.satisfaction.toFixed(0)}%`;
+    }
   }
   
   update_competitor_cards(gameState){
-    const competitorGrid = document.getElementById('competitor-grid')!;
+    const competitorGrid = document.getElementById('competitor-grid');
+    if (!competitorGrid) return;
+    
     const competitors = gameState.restaurants.filter(r => r.type === 'ai');
     
     competitorGrid.innerHTML = competitors.map(competitor => `
-      
-        ${SecurityValidator.escape_html(competitor.name)}
-
-            Market Share:
-            ${competitor.marketShare.toFixed(1)}%
-
-            Revenue:
-            $${competitor.revenue.toFixed(0)}
-
-            Satisfaction:
-            ${competitor.satisfaction.toFixed(0)}%
-
-            Strategy:
-            ${competitor.strategyType}
-
+      <div class="competitor-card">
+        <h3>${SecurityValidator.escape_html(competitor.name)}</h3>
+        <div class="competitor-stats">
+          <div class="stat">
+            <span class="label">Market Share:</span>
+            <span class="value">${competitor.marketShare.toFixed(1)}%</span>
+          </div>
+          <div class="stat">
+            <span class="label">Revenue:</span>
+            <span class="value">$${competitor.revenue.toFixed(0)}</span>
+          </div>
+          <div class="stat">
+            <span class="label">Satisfaction:</span>
+            <span class="value">${competitor.satisfaction.toFixed(0)}%</span>
+          </div>
+          <div class="stat">
+            <span class="label">Strategy:</span>
+            <span class="value">${competitor.strategyType || 'balanced'}</span>
+          </div>
+        </div>
+      </div>
     `).join('');
   }
   
   update_menu_display(gameState){
-    const player = gameState.restaurants.find(r => r.type === 'player')!;
-    const menuList = document.getElementById('menu-items')!;
+    const player = gameState.restaurants.find(r => r.type === 'player');
+    if (!player) return;
+    
+    const menuList = document.getElementById('menu-items');
+    if (!menuList) return;
     
     menuList.innerHTML = player.menu.map(item => `
-
-          ${SecurityValidator.escape_html(item.name)}
-          $${item.price.toFixed(2)}
-
-          Pop: ${item.popularity.toFixed(0)}%
-          ★${item.customerRating.toFixed(1)}
-          Profit: ${item.profitMargin.toFixed(0)}%
-
-          Update Price
-  Remove;
+      <div class="menu-item">
+        <div class="item-header">
+          <span class="item-name">${SecurityValidator.escape_html(item.name)}</span>
+          <span class="item-price">$${item.price.toFixed(2)}</span>
+        </div>
+        <div class="item-stats">
+          <span>Pop: ${item.popularity.toFixed(0)}%</span>
+          <span>★${item.customerRating.toFixed(1)}</span>
+          <span>Profit: ${item.profitMargin.toFixed(0)}%</span>
+        </div>
+        <div class="item-actions">
+          <button class="update-price" data-item-id="${item.id}">Update Price</button>
+          <button class="remove-item" data-item-id="${item.id}">Remove</button>
+        </div>
+      </div>
     `).join('');
   }
   
   render_revenue_chart(gameState){
+    if (!this.revenueChartCtx) return;
+    
     const ctx = this.revenueChartCtx;
     const width = this.revenueChartCanvas.width;
     const height = this.revenueChartCanvas.height;
@@ -103,23 +169,27 @@ export class GameRenderer {
     const colors = ['#3498db', '#e74c3c', '#2ecc71', '#f39c12', '#9b59b6', '#1abc9c'];
     const maxRevenue = Math.max(...Array.from(this.revenueHistory.values()).flat());
     
-    gameState.restaurants.forEach((restaurant, index) => {
-      const history = this.revenueHistory.get(`restaurant-${index}`) || [];
-      ctx.strokeStyle = colors[index];
-      ctx.lineWidth = restaurant.type === 'player' ? 3 : 1;
-      
-      ctx.beginPath();
-      history.forEach((revenue, i) => {
-        const x = (i / 60) * width;
-        const y = height - (revenue / maxRevenue) * height * 0.9;
-        if (i === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
+    if (maxRevenue > 0) {
+      gameState.restaurants.forEach((restaurant, index) => {
+        const history = this.revenueHistory.get(`restaurant-${index}`) || [];
+        ctx.strokeStyle = colors[index] || '#333';
+        ctx.lineWidth = restaurant.type === 'player' ? 3 : 1;
+        
+        ctx.beginPath();
+        history.forEach((revenue, i) => {
+          const x = (i / 60) * width;
+          const y = height - (revenue / maxRevenue) * height * 0.9;
+          if (i === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        });
+        ctx.stroke();
       });
-      ctx.stroke();
-    });
+    }
   }
   
   render_restaurant_view(gameState, deltaTime){
+    if (!this.restaurantCtx) return;
+    
     const ctx = this.restaurantCtx;
     const width = this.restaurantCanvas.width;
     const height = this.restaurantCanvas.height;
@@ -145,12 +215,12 @@ export class GameRenderer {
     
     // Draw tables
     const tables = [
-      { x, y: 150 },
-      { x, y: 150 },
-      { x, y: 150 },
-      { x, y: 250 },
-      { x, y: 250 },
-      { x, y: 250 }
+      { x: 250, y: 150 },
+      { x: 350, y: 150 },
+      { x: 450, y: 150 },
+      { x: 250, y: 250 },
+      { x: 350, y: 250 },
+      { x: 450, y: 250 }
     ];
     
     tables.forEach(table => {
@@ -170,10 +240,24 @@ export class GameRenderer {
   }
   
   update_customer_sprites(gameState, deltaTime){
-    const player = gameState.restaurants.find(r => r.type === 'player')!;
+    const player = gameState.restaurants.find(r => r.type === 'player');
+    if (!player) return;
     
     // Add new customers based on arrival rate
-    if (Math.random()  {
+    if (Math.random() < 0.02) { // 2% chance per frame
+      this.customerSprites.push({
+        x: 580,
+        y: 350,
+        targetX: 300 + Math.random() * 200,
+        targetY: 200 + Math.random() * 100,
+        state: 'entering',
+        satisfaction: player.satisfaction + (Math.random() - 0.5) * 20,
+        orderTime: 0
+      });
+    }
+    
+    // Update existing customers
+    this.customerSprites = this.customerSprites.filter(sprite => {
       // Move towards target
       const dx = sprite.targetX - sprite.x;
       const dy = sprite.targetY - sprite.y;
@@ -198,12 +282,12 @@ export class GameRenderer {
           case 'eating':
             if (Date.now() - sprite.orderTime > 5000) {
               sprite.state = 'leaving';
-              sprite.targetX = 550;
+              sprite.targetX = 580;
               sprite.targetY = 350;
             }
             break;
           case 'leaving':
-            if (sprite.x > 540) {
+            if (sprite.x > 560) {
               return false; // Remove sprite
             }
             break;
@@ -246,30 +330,37 @@ export class GameRenderer {
   }
   
   update_advice(advice){
-    const adviceContent = document.getElementById('advice-content')!;
-    adviceContent.innerHTML = SecurityValidator.escape_html(advice.message);
-    adviceContent.className = `advice-content ${advice.type} ${advice.priority}`;
+    const adviceContent = document.getElementById('advice-content');
+    if (adviceContent) {
+      adviceContent.innerHTML = SecurityValidator.escape_html(advice.message);
+      adviceContent.className = `advice-content ${advice.type} ${advice.priority}`;
+    }
   }
   
   show_game_over(results){
-    const gameOverScreen = document.getElementById('game-over')!;
-    const finalResults = document.getElementById('final-results')!;
+    const gameOverScreen = document.getElementById('game-over');
+    const finalResults = document.getElementById('final-results');
     
-    finalResults.innerHTML = `
-      Final Rankings
-      ${results.map((result, index) => `
-        
-          #${index + 1}
-          ${SecurityValidator.escape_html(result.name)}
-          Score: ${result.score}
-          
-            Market Share: ${result.marketShare.toFixed(1)}%
-            Revenue: $${result.revenue.toFixed(0)}
-            Satisfaction: ${result.satisfaction.toFixed(0)}%
-
-      `).join('')}
-    `;
+    if (finalResults) {
+      finalResults.innerHTML = `
+        <h2>Final Rankings</h2>
+        ${results.map((result, index) => `
+          <div class="result-item ${index === 0 ? 'winner' : ''}">
+            <span class="rank">#${index + 1}</span>
+            <span class="name">${SecurityValidator.escape_html(result.name)}</span>
+            <span class="score">Score: ${result.score}</span>
+            <div class="result-details">
+              Market Share: ${result.marketShare.toFixed(1)}%
+              Revenue: $${result.revenue.toFixed(0)}
+              Satisfaction: ${result.satisfaction.toFixed(0)}%
+            </div>
+          </div>
+        `).join('')}
+      `;
+    }
     
-    gameOverScreen.classList.remove('hidden');
+    if (gameOverScreen) {
+      gameOverScreen.classList.remove('hidden');
+    }
   }
 }
