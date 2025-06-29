@@ -9,20 +9,14 @@ import { SupportAI } from '../ai/SupportAI.js';
 import { MathUtils } from '../utils/MathUtils.js';
 
 export class GameEngine {
-  gameStateManager;
-  aiControllers= [];
-  renderer;
-  inputHandler;
-  marketEventManager;
-  supportAI;
-  
-  lastUpdateTime= 0;
-  accumulatedTime= 0;
-  gameStartTime= 0;
-  isPaused= false;
-  isGameOver= false;
-  
   constructor() {
+    this.aiControllers = [];
+    this.lastUpdateTime = 0;
+    this.accumulatedTime = 0;
+    this.gameStartTime = 0;
+    this.isPaused = false;
+    this.isGameOver = false;
+    
     this.gameStateManager = new GameStateManager();
     this.renderer = new GameRenderer();
     this.inputHandler = new InputHandler(this);
@@ -32,7 +26,7 @@ export class GameEngine {
     this.initialize_game();
   }
   
-  initialize_game(): void {
+  initialize_game() {
     // Initialize AI controllers
     const state = this.gameStateManager.get_state();
     const aiRestaurants = state.restaurants.filter(r => r.type === 'ai');
@@ -52,11 +46,11 @@ export class GameEngine {
     setInterval(() => this.auto_save(), GAME_CONSTANTS.AUTOSAVE_INTERVAL_MS);
   }
   
-  setup_event_listeners(): void {
+  setup_event_listeners() {
     this.inputHandler.initialize();
   }
   
-  start_game_loop(): void {
+  start_game_loop() {
     const loop = (currentTime) => {
       if (this.isGameOver) return;
       
@@ -82,20 +76,22 @@ export class GameEngine {
     requestAnimationFrame(loop);
   }
   
-  update_game_state(): void {
+  update_game_state() {
     const state = this.gameStateManager.get_state();
     
     // Update time
     const newTimeRemaining = state.timeRemaining - 1;
     
-    if (newTimeRemaining = GAME_CONSTANTS.DAYS_PER_GAME) {
+    if (newTimeRemaining <= 0) {
+      // Move to next day
+      if (state.currentDay > GAME_CONSTANTS.DAYS_PER_GAME) {
         this.end_game();
         return;
       }
       
       this.advance_to_next_day();
     } else {
-      this.gameStateManager.update_state({ timeRemaining);
+      this.gameStateManager.update_state({ timeRemaining: newTimeRemaining });
     }
     
     // Process AI decisions
@@ -115,7 +111,7 @@ export class GameEngine {
     this.renderer.update_advice(advice);
   }
   
-  process_ai_actions(): void {
+  process_ai_actions() {
     const state = this.gameStateManager.get_state();
     
     this.aiControllers.forEach(controller => {
@@ -124,7 +120,7 @@ export class GameEngine {
     });
   }
   
-  update_restaurant_operations(): void {
+  update_restaurant_operations() {
     const state = this.gameStateManager.get_state();
     
     state.restaurants.forEach(restaurant => {
@@ -149,11 +145,12 @@ export class GameEngine {
       
       // Update restaurant
       this.gameStateManager.update_restaurant(restaurant.id, {
-        customerCount,
-        revenue,
-        expenses,
-        cash,
-        dailyProfit);
+        customerCount: restaurant.customerCount + newCustomers,
+        revenue: restaurant.revenue + revenue,
+        expenses: restaurant.expenses + expenses,
+        cash: restaurant.cash + revenue - expenses,
+        dailyProfit: revenue - expenses
+      });
       
       // Update satisfaction (slowly decays)
       const newSatisfaction = Math.max(
@@ -161,11 +158,12 @@ export class GameEngine {
         restaurant.satisfaction - GAME_CONFIG.satisfactionDecayRate
       );
       this.gameStateManager.update_restaurant(restaurant.id, {
-        satisfaction);
+        satisfaction: newSatisfaction
+      });
     });
   }
   
-  calculate_event_multiplier(effectType): number {
+  calculate_event_multiplier(effectType) {
     const state = this.gameStateManager.get_state();
     let multiplier = 1.0;
     
@@ -178,7 +176,7 @@ export class GameEngine {
     return multiplier;
   }
   
-  calculate_average_order_value(restaurant): number {
+  calculate_average_order_value(restaurant) {
     if (restaurant.menu.length === 0) return 0;
     
     const totalValue = restaurant.menu.reduce((sum, item) => {
@@ -189,11 +187,19 @@ export class GameEngine {
     return totalValue / restaurant.menu.length;
   }
   
-  process_market_events(): void {
+  process_market_events() {
     const state = this.gameStateManager.get_state();
     
     // Random chance for new events
-    if (Math.random()  {
+    if (Math.random() < 0.1) { // 10% chance per second
+      const newEvent = this.marketEventManager.generate_random_event();
+      if (newEvent) {
+        this.gameStateManager.add_market_event(newEvent);
+      }
+    }
+    
+    // Update event durations
+    state.marketEvents.forEach(event => {
       event.duration -= 1 / GAME_CONSTANTS.SECONDS_PER_DAY;
     });
     
@@ -201,27 +207,29 @@ export class GameEngine {
     this.gameStateManager.remove_expired_events();
   }
   
-  advance_to_next_day(): void {
+  advance_to_next_day() {
     const state = this.gameStateManager.get_state();
     
     // Reset daily values
     state.restaurants.forEach(restaurant => {
       this.gameStateManager.update_restaurant(restaurant.id, {
-        dailyProfit);
+        dailyProfit: 0
+      });
     });
     
     // Move to next day
     this.gameStateManager.update_state({
-      currentDay,
-      timeRemaining);
+      currentDay: state.currentDay + 1,
+      timeRemaining: GAME_CONSTANTS.SECONDS_PER_DAY
+    });
     
     // Change weather randomly
-    const weathers= ['sunny', 'rainy', 'cloudy'];
+    const weathers = ['sunny', 'rainy', 'cloudy'];
     const newWeather = weathers[MathUtils.random_int(0, 2)];
-    this.gameStateManager.update_state({ weatherCondition);
+    this.gameStateManager.update_state({ weatherCondition: newWeather });
   }
   
-  execute_action(restaurantId, action): void {
+  execute_action(restaurantId, action) {
     try {
       const restaurant = this.gameStateManager.get_restaurant(restaurantId);
       if (!restaurant) return;
@@ -238,22 +246,23 @@ export class GameEngine {
           break;
       }
     } catch (error) {
-      console.error('Error executing action, error);
+      console.error('Error executing action:', error);
     }
   }
   
-  handle_menu_action(restaurant, action): void {
+  handle_menu_action(restaurant, action) {
     // Implementation for menu actions
     switch (action.action) {
       case 'add_item':
         const validatedItem = SecurityValidator.validate_menu_item_input(action.parameters);
         const newItem = {
-          id)}`,
+          id: `menu-${Date.now()}`,
           ...validatedItem,
-          popularity,
-          profitMargin, validatedItem.cost!),
-          customerRating;
-        restaurant.menu.push(newItem );
+          popularity: 50,
+          profitMargin: MathUtils.calculate_profit_margin(validatedItem.price, validatedItem.cost),
+          customerRating: 4.0
+        };
+        restaurant.menu.push(newItem);
         break;
       
       case 'remove_item':
@@ -270,7 +279,7 @@ export class GameEngine {
     }
   }
   
-  handle_marketing_action(restaurant, action): void {
+  handle_marketing_action(restaurant, action) {
     // Implementation for marketing actions
     const cost = SecurityValidator.validate_number(action.parameters.budget, 0, restaurant.cash);
     restaurant.cash -= cost;
@@ -281,7 +290,7 @@ export class GameEngine {
     restaurant.satisfaction = Math.min(100, restaurant.satisfaction + boost);
   }
   
-  handle_operations_action(restaurant, action): void {
+  handle_operations_action(restaurant, action) {
     // Implementation for operations actions
     switch (action.action) {
       case 'hire_staff':
@@ -293,17 +302,18 @@ export class GameEngine {
     }
   }
   
-  end_game(): void {
+  end_game() {
     this.isGameOver = true;
     const state = this.gameStateManager.get_state();
     
     // Calculate final scores
     const results = state.restaurants.map(restaurant => ({
-      name,
-      score),
-      marketShare,
-      revenue,
-      satisfaction));
+      name: restaurant.name,
+      score: this.calculate_final_score(restaurant),
+      marketShare: restaurant.marketShare,
+      revenue: restaurant.revenue,
+      satisfaction: restaurant.satisfaction
+    }));
     
     // Sort by score
     results.sort((a, b) => b.score - a.score);
@@ -312,7 +322,7 @@ export class GameEngine {
     this.renderer.show_game_over(results);
   }
   
-  calculate_final_score(restaurant): number {
+  calculate_final_score(restaurant) {
     const marketSharePoints = restaurant.marketShare * 1000;
     const revenuePoints = restaurant.revenue * 0.1;
     const satisfactionPoints = restaurant.satisfaction * 100;
@@ -321,16 +331,16 @@ export class GameEngine {
     return Math.round(marketSharePoints + revenuePoints + satisfactionPoints + efficiencyPoints);
   }
   
-  auto_save(): void {
+  auto_save() {
     // Implement autosave functionality
     localStorage.setItem('ai-restaurant-battle-save', JSON.stringify(this.gameStateManager.get_state()));
   }
   
-  pause_game(): void {
+  pause_game() {
     this.isPaused = true;
   }
   
-  resume_game(): void {
+  resume_game() {
     this.isPaused = false;
   }
 }

@@ -574,4 +574,15 @@ function calculateFinalScore(restaurant: Restaurant): number {
 - Required: Canvas API, requestAnimationFrame, CSS Grid
 - Testing: Chrome 90+, Firefox 88+, Safari 14+, Edge 90+
 
+# Completion conditions
 
+- Pass lint, prettier, typecheck, test, build, and playwright
+- Achieve 100% coverage using vitest
+- Complete updates to related documentation
+
+# refactoring
+Organize the new insights gained from the verification file you just created in one of the following ways.
+1. Reflect in implementation
+2. Test code in *.test.ts
+3. Describe in docs/* documentation
+4. Leave as snippets in examples/*

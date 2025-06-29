@@ -91,7 +91,7 @@ export class GameEngine {
     
     if (newTimeRemaining <= 0) {
       // Move to next day
-      if (state.currentDay >= GAME_CONSTANTS.DAYS_PER_GAME) {
+      if (state.currentDay > GAME_CONSTANTS.DAYS_PER_GAME) {
         this.end_game();
         return;
       }
