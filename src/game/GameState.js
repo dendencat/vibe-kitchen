@@ -121,7 +121,7 @@ export class GameStateManager {
     this.state = { ...this.state, ...updates };
   }
   
-  get_restaurant(id): Restaurant | undefined {
+  get_restaurant(id) {
     return this.state.restaurants.find(r => r.id === id);
   }
   
