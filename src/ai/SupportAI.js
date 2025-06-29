@@ -1,4 +1,5 @@
 import { MathUtils } from '../utils/MathUtils.js';
+import { AdviceTemplates } from './AdviceTemplates.js';
 
 export class SupportAI {
   lastAdviceTime = 0;
@@ -7,7 +8,6 @@ export class SupportAI {
   generate_advice(gameState){
     const currentTime = Date.now();
     const playerRestaurant = gameState.restaurants.find(r => r.type === 'player');
-    const competitors = gameState.restaurants.filter(r => r.type === 'ai');
     
     if (!playerRestaurant) {
       return this.get_default_advice();
@@ -20,60 +20,16 @@ export class SupportAI {
     
     this.lastAdviceTime = currentTime;
     
-    // Priority 1: Cash flow issues
-    if (playerRestaurant.cash < 5000) {
-      return {
-        id: `advice-${Date.now()}`,
-        type: 'warning',
-        priority: 'high',
-        message: '💰 Cash flow is low! Consider increasing prices or launching a marketing campaign.',
-        timestamp: currentTime
-      };
-    }
+    // Use the new localized advice system
+    const message = AdviceTemplates.getAdviceForGameState(gameState);
+    const type = AdviceTemplates.getAdviceType(gameState);
+    const priority = AdviceTemplates.getAdvicePriority(gameState);
     
-    // Priority 2: Market leader domination
-    const marketLeader = this.find_market_leader(gameState);
-    if (marketLeader && marketLeader.id !== 'player' && marketLeader.marketShare > 30) {
-      return {
-        id: `advice-${Date.now()}`,
-        type: 'warning',
-        priority: 'high',
-        message: `🎯 ${marketLeader.name} is dominating with ${marketLeader.marketShare.toFixed(1)}% market share! Consider aggressive marketing.`,
-        timestamp: currentTime,
-        relatedCompetitor: marketLeader.id
-      };
-    }
-    
-    // Priority 3: Satisfaction issues
-    if (playerRestaurant.satisfaction < 70) {
-      return {
-        id: `advice-${Date.now()}`,
-        type: 'warning',
-        priority: 'medium',
-        message: `😞 Customer satisfaction is low (${playerRestaurant.satisfaction.toFixed(0)}%). Consider hiring more staff or improving menu quality.`,
-        timestamp: currentTime
-      };
-    }
-    
-    // Priority 4: Opportunities
-    const opportunities = this.identify_opportunities(gameState, playerRestaurant, competitors);
-    if (opportunities.length > 0) {
-      return {
-        id: `advice-${Date.now()}`,
-        type: 'opportunity',
-        priority: 'medium',
-        message: `💡 ${opportunities[0]}`,
-        timestamp: currentTime
-      };
-    }
-    
-    // Priority 5: General tips
-    const tips = this.get_contextual_tips(gameState, playerRestaurant);
     return {
       id: `advice-${Date.now()}`,
-      type: 'tip',
-      priority: 'low',
-      message: tips[MathUtils.random_int(0, tips.length - 1)],
+      type: type,
+      priority: priority,
+      message: message,
       timestamp: currentTime
     };
   }
@@ -190,11 +146,12 @@ export class SupportAI {
   }
   
   get_default_advice(){
+    const message = AdviceTemplates.getRandomMessage('marketingTiming');
     return {
       id: `advice-default-${Date.now()}`,
       type: 'tip',
       priority: 'low',
-      message: '💡 Keep monitoring your competitors and market trends.',
+      message: message,
       timestamp: Date.now()
     };
   }
