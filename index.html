@@ -1,128 +1,47 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;">
-    <title data-i18n="gameTitle">AI Restaurant Battle</title>
-    <link rel="stylesheet" href="styles/main.css">
-    <link rel="stylesheet" href="styles/components.css">
-    <link rel="stylesheet" href="styles/responsive.css">
-    <link rel="stylesheet" href="styles/animations.css">
-</head>
-<body data-lang="en">
-    <!-- Language Switcher -->
-    <div class="language-switcher">
-        <button class="lang-btn active" data-lang="en">EN</button>
-        <button class="lang-btn" data-lang="ja">JP</button>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; media-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'"
+    />
+    <meta name="theme-color" content="#ffb7c5" />
+    <meta
+      name="description"
+      content="AI Restaurant Battle — a 3D restaurant management battle against five AI rivals."
+    />
+    <title>AI Restaurant Battle</title>
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+  </head>
+  <body>
+    <div id="scene" class="scene"></div>
+    <p id="scene-fallback" class="scene-fallback" data-i18n="noWebGL" hidden></p>
+
+    <main id="title-screen" class="title-screen"></main>
+
+    <div id="game-ui" class="game-ui" hidden>
+      <header id="hud" class="hud glass"></header>
+      <div id="stage" class="stage" aria-hidden="true"></div>
+      <aside id="left-panel" class="panel panel-left glass" aria-labelledby="left-panel-title">
+        <span id="left-panel-title" class="visually-hidden" data-i18n="rankingTitle"
+          >Live ranking</span
+        >
+      </aside>
+      <aside id="right-panel" class="panel panel-right glass" aria-labelledby="right-panel-title">
+        <span id="right-panel-title" class="visually-hidden" data-i18n="advisorRole"
+          >AI business advisor</span
+        >
+      </aside>
+      <section id="dock" class="dock glass" aria-labelledby="dock-title">
+        <span id="dock-title" class="visually-hidden" data-i18n="tabs.menu">Menu</span>
+      </section>
     </div>
 
-    <div class="game-container">
-        <header class="game-header">
-            <div class="time-display">
-                <span id="day-counter">Day 1 / 7</span>
-                <span id="time-remaining">Time: 60s</span>
-            </div>
-            <div class="revenue-chart">
-                <canvas id="revenue-chart-canvas" width="300" height="100"></canvas>
-            </div>
-            <div class="ranking-display">
-                <h3 data-i18n="marketShareRanking">Market Share Ranking</h3>
-                <div id="ranking-list"></div>
-            </div>
-        </header>
-        
-        <main class="game-main">
-            <section class="restaurant-view">
-                <div class="player-restaurant">
-                    <canvas id="restaurant-canvas" width="600" height="400"></canvas>
-                    <div class="restaurant-stats">
-                        <div class="stat-item">
-                            <span class="stat-label" data-i18n="cash">Cash:</span>
-                            <span id="cash-display" class="stat-value">$50,000</span>
-                        </div>
-                        <div class="stat-item">
-                            <span class="stat-label" data-i18n="customers">Customers:</span>
-                            <span id="customer-count" class="stat-value">0</span>
-                        </div>
-                        <div class="stat-item">
-                            <span class="stat-label" data-i18n="satisfaction">Satisfaction:</span>
-                            <span id="satisfaction-display" class="stat-value">100%</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="customer-animation" id="customer-animation"></div>
-            </section>
-            
-            <section class="ai-competitors">
-                <h3 data-i18n="aiCompetitors">AI Competitors</h3>
-                <div class="competitor-grid" id="competitor-grid">
-                    <!-- AI competitor cards will be inserted here -->
-                </div>
-            </section>
-        </main>
-        
-        <aside class="ai-assistant">
-            <div class="sakura-avatar">
-                <div class="avatar-image">🌸</div>
-                <span class="assistant-name" data-i18n="aiAssistantName">Sakura AI Assistant</span>
-            </div>
-            <div class="advice-panel">
-                <h4 data-i18n="strategicAdvice">Strategic Advice</h4>
-                <div id="advice-content" class="advice-content" data-i18n="welcomeMessage">
-                    Welcome! I'm here to help you succeed in the restaurant business.
-                </div>
-            </div>
-            <div class="market-analysis">
-                <h4 data-i18n="marketAnalysis">Market Analysis</h4>
-                <div id="market-analysis-content"></div>
-            </div>
-        </aside>
-        
-        <footer class="control-panel">
-            <div class="menu-management">
-                <h4 data-i18n="menuManagement">Menu Management</h4>
-                <div id="menu-items" class="menu-items-list"></div>
-                <button id="add-menu-item" class="btn btn-primary" data-i18n="addNewDish">Add New Dish</button>
-            </div>
-            <div class="marketing-controls">
-                <h4 data-i18n="marketing">Marketing</h4>
-                <button id="launch-campaign" class="btn btn-secondary" data-i18n="launchCampaign">Launch Campaign</button>
-                <div id="campaign-status"></div>
-            </div>
-            <div class="operations-panel">
-                <h4 data-i18n="operations">Operations</h4>
-                <button id="hire-staff" class="btn btn-secondary" data-i18n="hireStaff">Hire Staff</button>
-                <button id="upgrade-equipment" class="btn btn-secondary" data-i18n="upgradeEquipment">Upgrade Equipment</button>
-                <div id="operations-status"></div>
-            </div>
-        </footer>
-    </div>
-    
-    <!-- Modal for adding menu items -->
-    <div id="menu-modal" class="modal hidden">
-        <div class="modal-content">
-            <h3 data-i18n="addNewMenuItem">Add New Menu Item</h3>
-            <form id="menu-item-form">
-                <input type="text" id="item-name" data-i18n-placeholder="dishName" placeholder="Dish Name" required maxlength="50">
-                <input type="number" id="item-price" data-i18n-placeholder="price" placeholder="Price ($)" min="1" max="1000" step="0.01" required>
-                <input type="number" id="item-cost" data-i18n-placeholder="cost" placeholder="Cost ($)" min="0.1" max="500" step="0.01" required>
-                <input type="number" id="item-cooktime" data-i18n-placeholder="cookTime" placeholder="Cook Time (seconds)" min="1" max="60" required>
-                <button type="submit" class="btn btn-primary" data-i18n="addItem">Add Item</button>
-                <button type="button" id="cancel-menu" class="btn btn-secondary" data-i18n="cancel">Cancel</button>
-            </form>
-        </div>
-    </div>
-    
-    <!-- Game Over Screen -->
-    <div id="game-over" class="game-over-screen hidden">
-        <div class="game-over-content">
-            <h2 data-i18n="gameOver">Game Over!</h2>
-            <div id="final-results"></div>
-            <button id="restart-game" class="btn btn-primary" data-i18n="playAgain">Play Again</button>
-        </div>
-    </div>
-    
-    <script src="src/main.js" type="module"></script>
-</body>
+    <div id="toasts" class="toasts" aria-live="polite"></div>
+
+    <noscript>AI Restaurant Battle needs JavaScript to run.</noscript>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
 </html>

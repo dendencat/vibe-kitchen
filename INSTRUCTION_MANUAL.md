@@ -1,467 +1,143 @@
-# AI Restaurant Battle - Instruction Manual
+# AI Restaurant Battle — Instruction Manual / 操作説明書
 
-## 🎮 Game Controls & Interface Guide
-
-This comprehensive manual explains every component, control, and feature in AI Restaurant Battle.
-
----
-
-## 📱 Main Interface Components
-
-### 🔝 Header Bar (Game Status)
-
-#### Day Counter
-- **Location**: Top-left corner
-- **Display**: "Day X / 7" format
-- **Function**: Shows current game day and total progression
-- **Color Coding**: Orange text for visibility
-
-#### Time Remaining
-- **Location**: Below day counter
-- **Display**: "MM:SS" format (minutes:seconds)
-- **Function**: Countdown timer for current day
-- **Color Coding**: Blue text, turns red when under 10 seconds
-
-#### Revenue Chart Canvas
-- **Location**: Center of header
-- **Size**: 300×100 pixels
-- **Function**: Real-time line graph showing all restaurants' revenue
-- **Features**:
-  - Your restaurant: Thick blue line
-  - AI competitors: Thinner colored lines
-  - Auto-scaling based on highest performer
-  - Updates every second
-
-#### Market Share Ranking
-- **Location**: Top-right corner
-- **Display**: Live leaderboard
-- **Function**: Shows current competitive standings
-- **Format**:
-  ```
-  #1 Restaurant Name    25.3%
-  #2 Restaurant Name    18.7%
-  #3 Restaurant Name    16.2%
-  ```
-- **Highlighting**: Your restaurant highlighted in blue
+This manual describes every screen and control of version 2 (3D redesign).
+日本語の要約は各節の末尾にあります。
 
 ---
 
-### 🏢 Main Game Area
+## 1. Title screen / タイトル画面
 
-#### Restaurant Canvas
-- **Location**: Center-left of screen
-- **Size**: 600×400 pixels
-- **Function**: Visual representation of your restaurant
-- **Elements**:
-  - **Kitchen Area**: Gray rectangle (top-left)
-  - **Dining Area**: Brown rectangle (main area)
-  - **Tables**: Six brown squares arranged in 2×3 grid
-  - **Customer Sprites**: Colored circles representing customers
-  - **Weather Effects**: Visual overlays for rain/clouds
+| Element | What it does |
+| --- | --- |
+| **EN / 日本語** (top right) | Switches the language everywhere, including the 3D signs |
+| **Restaurant name** | Your shop's sign (max 24 characters; HTML characters are removed) |
+| **Difficulty** | Easy / Normal / Hard — scales how strongly the AI rivals attract guests (×0.8 / ×1.0 / ×1.2) |
+| **Background music** | Pick one of four pop tracks or *Off*. Clicking a track previews it immediately |
+| **Open the restaurant** | Starts a new 7-day game |
+| **Continue** | Appears when an autosave exists (saved every 30 s and when you quit) |
+| **How to play** | Short rules summary |
 
-#### Customer Animation System
-- **Customer States**:
-  - **Entering**: Moving from entrance to table
-  - **Ordering**: Stationary with thought bubble (💭)
-  - **Eating**: Stationary with fork/knife icon (🍴)
-  - **Leaving**: Moving from table to exit
-- **Color Coding**:
-  - **Green**: High satisfaction (80%+)
-  - **Orange**: Medium satisfaction (50-80%)
-  - **Red**: Low satisfaction (below 50%)
-
-#### Restaurant Stats Panel
-- **Location**: Below restaurant canvas
-- **Layout**: Three stat boxes side-by-side
-
-##### Cash Display
-- **Label**: "Cash:"
-- **Color**: Green text
-- **Format**: "$XX,XXX.XX"
-- **Function**: Shows available money
-- **Warning**: Turns red when below $5,000
-
-##### Customer Count
-- **Label**: "Customers:"
-- **Color**: Blue text
-- **Format**: Whole numbers
-- **Function**: Total customers served today
-- **Updates**: Real-time as customers complete orders
-
-##### Satisfaction Display
-- **Label**: "Satisfaction:"
-- **Color**: Orange text
-- **Format**: "XX%"
-- **Function**: Average customer satisfaction rating
-- **Range**: 0-100%
+The 3D plaza slowly orbits behind the card.
+*日本語：店名・難易度・BGM を選んで「お店をオープン」。オートセーブがあれば「つづきから」が表示されます。*
 
 ---
 
-### 🤖 AI Competitors Section
+## 2. Top bar (HUD) / 上部バー
 
-#### Competitor Grid
-- **Location**: Bottom-left of main area
-- **Layout**: Responsive grid (auto-fit, minimum 180px width)
-- **Function**: Shows all 5 AI restaurants' performance
+- **Day X / 7** with seven pips (done / current / upcoming).
+- **Day progress bar** — white markers show the lunch (35 %) and dinner
+  (75 %) rushes. Below it: phase (Morning, Lunch rush, Afternoon, Dinner
+  rush, Late night), time left (`m:ss`) and today's weather.
+- **Cash** (with today's profit), **Guests** (total served; shows a warning
+  when guests are turned away), **Satisfaction** (turns red under 50 %),
+  **Share** (your market share). Chips flash green/red on big changes.
+- **🎵** mute, **⏸** pause menu, **⚙** settings (also pauses).
 
-#### Individual Competitor Cards
-Each card displays:
-- **Restaurant Name**: AI restaurant identifier
-- **Market Share**: Current percentage of market
-- **Revenue**: Total money earned
-- **Satisfaction**: Customer satisfaction percentage
-- **Strategy Type**: AI behavior pattern (aggressive, strategic, etc.)
-
-**Card Interactions**:
-- **Hover Effect**: Blue border and slight upward movement
-- **Color Coding**: Background changes based on performance
+*日本語：日数・時間帯（ランチ/ディナーのピーク）・残り時間・天気、現金/来客数/満足度/シェアを表示。右端はミュート・一時停止・設定。*
 
 ---
 
-### 🌸 AI Assistant Sidebar
+## 3. 3D plaza / 3D 広場
 
-#### Sakura Avatar
-- **Icon**: Cherry blossom emoji (🌸)
-- **Name**: "Sakura AI Assistant"
-- **Function**: Visual representation of your advisor
-- **Styling**: Pink highlight color
+- Six shops around the sakura tree. Yours is at the front with a pink
+  diamond marker and a pulsing ring.
+- **Pillars** next to each shop grow with market share; the floating badge
+  shows rank and share. A **crown** floats over the current leader.
+- **Guests** walk in from the edges, enter, and leave. Grey guests were
+  turned away because the shop was full.
+- The sky follows the time of day (sunrise → noon → sunset → night with
+  glowing windows and street lamps). Rain and clouds follow the weather.
+- **Drag** to orbit, **scroll/pinch** to zoom, **click a shop** to show its
+  intel card. Confetti marks campaigns, hires and upgrades.
 
-#### Strategic Advice Panel
-- **Header**: "Strategic Advice"
-- **Content**: Dynamic advice based on game state
-- **Message Types**:
-  - **Warning** (Red border): Financial alerts, competitive threats
-  - **Opportunity** (Orange border): Growth suggestions, market openings
-  - **Tip** (Blue border): General strategy advice, optimization suggestions
-
-#### Advice Categories
-- **Financial Warnings**: Low cash alerts, expense warnings
-- **Market Threats**: Dominant competitor alerts, market share loss
-- **Satisfaction Issues**: Customer service problems, quality concerns
-- **Growth Opportunities**: Expansion suggestions, pricing optimization
-- **Contextual Tips**: Situation-specific strategic advice
+*日本語：柱の高さ＝シェア、王冠＝首位。灰色のお客様は満席で帰った人。ドラッグで回転、クリックで偵察。*
 
 ---
 
-## 🎛️ Control Panel (Bottom Interface)
+## 4. Left panel / 左パネル
 
-### 🍽️ Menu Management
-
-#### Menu Items Display
-- **Location**: Left section of control panel
-- **Scroll Area**: Maximum height 100px with scrollbar
-- **Function**: Shows all current menu items
-
-#### Menu Item Cards
-Each item displays:
-- **Header Row**:
-  - Item name (left)
-  - Item price (right)
-- **Stats Row**:
-  - **Pop**: Popularity percentage
-  - **★Rating**: Customer rating (1-5 stars)
-  - **Profit**: Profit margin percentage
-- **Action Buttons**:
-  - **Update Price**: Modify item cost
-  - **Remove**: Delete item from menu
-
-#### Add New Dish Button
-- **Label**: "Add New Dish"
-- **Style**: Primary blue button
-- **Function**: Opens menu item creation modal
+- **Live ranking** — rows slide into their new order as shares change; your
+  row has a **YOU** badge. Click a row to select that restaurant.
+- **Revenue** — cumulative revenue of all six restaurants (yours is the thick
+  pink line).
 
 ---
 
-### 📢 Marketing Controls
+## 5. Right panel — Sakura / 右パネル（サクラ）
 
-#### Launch Campaign Button
-- **Label**: "Launch Campaign"
-- **Style**: Secondary gray button
-- **Function**: Prompts for marketing budget input
-- **Budget Range**: $1,000 - $20,000
-- **Effect**: Increases customer satisfaction (~1% per $1,000)
-- **Duration**: Benefits last 3 days
+- **Rival intel** (when a shop is selected): strategy, rank and share,
+  revenue, satisfaction, average price, staff and buzz.
+- **Advice feed** — the three latest tips. Warnings are red, opportunities
+  green. **Show me →** opens the control tab the tip is about.
+- **Market events** — active events with an icon and a timer bar:
+  Rainy day (−30 % traffic), Local festival (+50 %), TV feature (your
+  satisfaction rises), Ingredient price spike (+30 % food cost).
 
-#### Campaign Status Display
-- **Location**: Below launch button
-- **Function**: Shows active campaign information
-- **Content**: Campaign type, remaining duration, current effect
+*日本語：ショップ選択時はライバル情報、サクラの助言（「開く」で該当タブへ）、市場イベントと残り時間。*
 
 ---
 
-### ⚙️ Operations Panel
+## 6. Control dock / 操作ドック
 
-#### Hire Staff Button
-- **Label**: "Hire Staff"
-- **Style**: Secondary gray button
-- **Function**: Adds new employee to restaurant
-- **Staff Types**:
-  - **Chef**: Improves cooking speed and food quality
-  - **Waiter**: Enhances customer service and satisfaction
-- **Costs**: Chefs $3,000/day, Waiters $2,500/day
-- **Limits**: Maximum 5 of each type
+Switch tabs with the mouse, `1` `2` `3`, or arrow keys.
 
-#### Upgrade Equipment Button
-- **Label**: "Upgrade Equipment"
-- **Style**: Secondary gray button
-- **Function**: Improves restaurant efficiency
-- **Equipment Types**:
-  - **Kitchen**: Basic efficiency boost (+30%)
-  - **Oven**: Professional-grade cooking (+40%)
-  - **Grill**: High-quality grilling (+35%)
-  - **Fryer**: Commercial frying (+25%)
-  - **Dishwasher**: Automated cleaning (+20%)
+### Menu / メニュー
+Each dish card shows price, popularity, margin and rating.
+- **− / +** change the price by $0.50 (instant, no dialog).
+- **✕** removes the dish; the toast offers **Undo**. At least one dish must
+  remain; the menu holds up to 10.
+- **+ Add dish** opens a dialog with **quick picks**, name, price, cost and
+  a cook-time slider. A live **margin preview** turns red under 20 %. Cost
+  must be lower than price. Slower dishes earn higher ratings but reduce
+  kitchen throughput.
 
----
+### Marketing / マーケティング
+| Campaign | Cost | Effect |
+| --- | --- | --- |
+| Social media | $2,000 | Quick, cheap buzz |
+| Radio spot | $5,000 | Solid buzz |
+| TV commercial | $12,000 | Huge buzz + 3 satisfaction |
 
-## 🔧 Modal Windows & Forms
+**Buzz** multiplies how attractive you are and fades about 1.5 % per second.
+Buttons are disabled when you cannot afford them.
 
-### 📝 Add Menu Item Modal
+### Operations / 運営
+- **Chef** (+2 guests/s, $600/day, $1,500 to hire) and **Waiter**
+  (+1.5 guests/s and happier guests, $450/day, $1,000) — up to 5 each.
+- **Kitchen upgrade** — +15 % capacity per level (Lv 1–5), cost $4,000 × level.
+- **Load** — demand ÷ capacity. Above 100 % guests are turned away.
 
-#### Modal Structure
-- **Background**: Semi-transparent dark overlay
-- **Content Box**: Centered, rounded rectangle
-- **Title**: "Add New Menu Item"
-- **Close Methods**: Cancel button or click outside
-
-#### Form Fields
-
-##### Dish Name Input
-- **Type**: Text field
-- **Placeholder**: "Dish Name"
-- **Validation**: Required, maximum 50 characters
-- **Security**: HTML sanitization to prevent XSS
-
-##### Price Input
-- **Type**: Number field
-- **Placeholder**: "Price ($)"
-- **Range**: $1.00 - $1,000.00
-- **Step**: $0.01 increments
-- **Validation**: Required, positive numbers only
-
-##### Cost Input
-- **Type**: Number field
-- **Placeholder**: "Cost ($)"
-- **Range**: $0.10 - $500.00
-- **Step**: $0.01 increments
-- **Function**: Ingredient and preparation cost
-
-##### Cook Time Input
-- **Type**: Number field
-- **Placeholder**: "Cook Time (seconds)"
-- **Range**: 1 - 60 seconds
-- **Function**: Time required to prepare dish
-- **Impact**: Affects customer wait time and satisfaction
-
-#### Action Buttons
-- **Add Item**: Submit form and create menu item
-- **Cancel**: Close modal without saving
+*日本語：メニューは −/+ で即価格変更、✕で削除（元に戻す可）。マーケは3種のキャンペーンで「話題度」を上げる。運営はシェフ/ホール雇用と厨房強化、混雑率で満席を確認。*
 
 ---
 
-### 💰 Price Update Dialog
-- **Trigger**: Click "Update Price" on menu item
-- **Type**: Browser prompt dialog
-- **Input**: New price value
-- **Validation**: Same as price input field
-- **Effect**: Immediately updates item price
+## 7. Pause menu & settings / 一時停止・設定
+
+Opened with **⏸**, **⚙**, `Space` or `P`. The game is paused while open.
+- Music track, music volume, sound effects volume, mute.
+- Graphics: **High** (shadows, high-DPI) or **Battery saver**.
+- Language, keyboard shortcuts, **Quit to title** (saves progress),
+  **Resume** (or `Esc`).
 
 ---
 
-### 🗑️ Remove Item Confirmation
-- **Trigger**: Click "Remove" on menu item  
-- **Type**: Browser confirmation dialog
-- **Message**: "Are you sure you want to remove this item?"
-- **Actions**: OK (removes item) or Cancel (no action)
+## 8. Results / 結果画面
+
+After day 7: your placement, a podium for the top three, the full table
+(share, revenue, satisfaction, score) and four awards — Revenue leader,
+Satisfaction champion, Efficiency master (revenue ÷ expenses) and Innovation
+award (most dishes added/removed). **Play again** keeps your name and
+difficulty; **Title** returns to the title screen.
 
 ---
 
-## 🎯 Game Over Screen
+## 9. Keyboard shortcuts / ショートカット
 
-### 📊 Final Results Display
-
-#### Game Over Modal
-- **Trigger**: End of Day 7 or early game termination
-- **Background**: Full-screen dark overlay (90% opacity)
-- **Position**: Centered modal window
-- **Z-Index**: 2000 (top layer)
-
-#### Results Content
-- **Title**: "Game Over!" in large orange text
-- **Final Rankings**: Complete performance breakdown
-- **Result Items**: Each restaurant's final statistics
-
-#### Restaurant Result Cards
-Each result displays:
-- **Rank**: Position (#1, #2, etc.)
-- **Name**: Restaurant identifier
-- **Score**: Calculated final score
-- **Details**:
-  - Market Share percentage
-  - Total Revenue earned
-  - Customer Satisfaction rating
-
-#### Winner Highlighting
-- **First Place**: Green background and border
-- **Special Styling**: Larger text, trophy indicators
-- **Celebration**: Visual emphasis for victory
-
-#### Restart Option
-- **Button**: "Play Again"
-- **Style**: Primary blue button
-- **Function**: Reload page to start new game
-
----
-
-## 🔔 Notification System
-
-### 📢 Notification Types
-
-#### Success Notifications
-- **Background**: Green (#2ecc71)
-- **Text**: White
-- **Examples**: "Menu item added!", "Price updated!", "Campaign launched!"
-
-#### Error Notifications
-- **Background**: Red (#e74c3c)
-- **Text**: White
-- **Examples**: "Invalid price range", "Not enough cash", "Maximum items reached"
-
-#### Info Notifications
-- **Background**: Blue (#3498db)
-- **Text**: White
-- **Examples**: General information, tips, updates
-
-### 📍 Notification Behavior
-- **Position**: Top-right corner of screen
-- **Animation**: Slide in from right
-- **Duration**: Auto-remove after 3 seconds
-- **Z-Index**: 3000 (highest layer)
-- **Stacking**: Multiple notifications stack vertically
-
----
-
-## ⌨️ Keyboard Controls
-
-### 🔤 Keyboard Shortcuts
-
-#### Universal Controls
-- **Escape Key**: Close all open modal windows
-- **P Key**: Pause/unpause game (if implemented)
-
-#### Form Navigation
-- **Tab**: Move between form fields
-- **Enter**: Submit active form
-- **Escape**: Cancel form input
-
----
-
-## 📱 Responsive Design
-
-### 💻 Screen Size Adaptations
-
-#### Desktop Layout (1280×720 minimum)
-- **Grid System**: CSS Grid with fixed dimensions
-- **Optimal Size**: 1280px width, 720px height
-- **Scaling**: Fixed aspect ratio, centered on larger screens
-
-#### Component Flexibility
-- **Competitor Grid**: Auto-fit columns based on available space
-- **Menu Items**: Scrollable area prevents overflow
-- **Modal Windows**: Responsive to content size
-
----
-
-## 🔒 Security Features
-
-### 🛡️ Input Validation
-
-#### Client-Side Validation
-- **Number Ranges**: All numeric inputs have min/max constraints
-- **Text Length**: String inputs limited to prevent overflow
-- **HTML Sanitization**: User content escaped to prevent XSS
-- **Type Checking**: Input types enforced at form level
-
-#### Server-Side Security
-- **No Server Communication**: Game runs entirely client-side
-- **Local Storage**: Browser localStorage for game saves
-- **Sandboxed Execution**: No external API calls or file access
-
----
-
-## 💾 Data Management
-
-### 📁 Game State Storage
-
-#### Auto-Save System
-- **Frequency**: Every 30 seconds
-- **Storage**: Browser localStorage
-- **Data**: Complete game state including progress
-- **Recovery**: Automatic restoration on page reload
-
-#### Saved Data Includes
-- Current day and time remaining
-- Restaurant financial state
-- Menu items and configurations
-- Staff and equipment levels
-- AI competitor states
-- Market events and conditions
-
----
-
-## 🔧 Technical Specifications
-
-### ⚡ Performance Settings
-
-#### Update Frequencies
-- **Game Logic**: 1-second intervals (1 FPS)
-- **Visual Rendering**: 60 FPS for smooth animation
-- **UI Updates**: Real-time response to user input
-
-#### Browser Compatibility
-- **Modern Browsers**: Chrome 80+, Firefox 75+, Safari 14+
-- **JavaScript**: ES6+ features required
-- **Canvas Support**: HTML5 Canvas API required
-- **Storage**: localStorage API required
-
----
-
-## 🎨 Visual Design Elements
-
-### 🎯 Color Scheme
-
-#### Primary Colors
-- **Background**: Dark navy (#1a1a2e)
-- **Panels**: Medium blue (#16213e)
-- **Text**: Light gray (#eee)
-- **Accents**: Various bright colors for categories
-
-#### Status Colors
-- **Success/Money**: Green (#2ecc71)
-- **Customers**: Blue (#3498db)
-- **Satisfaction**: Orange (#f39c12)
-- **Warnings**: Red (#e74c3c)
-
-#### AI Strategy Colors
-- **Aggressive**: Red (#e74c3c)
-- **Strategic**: Blue (#3498db)
-- **Emotional**: Pink (#e91e63)
-- **Speed**: Orange (#f39c12)
-- **Balanced**: Green (#2ecc71)
-
-### 🖼️ Animation Effects
-
-#### Smooth Transitions
-- **Button Hover**: Color change and slight elevation
-- **Modal Appearance**: Fade in with scale animation
-- **Notifications**: Slide in from right edge
-- **Chart Updates**: Smooth line drawing
-
-#### Customer Movement
-- **Pathfinding**: Smooth movement between restaurant areas
-- **State Transitions**: Visual indicators for customer actions
-- **Satisfaction Display**: Color changes based on service quality
-
----
-
-This instruction manual covers every interactive element and display component in AI Restaurant Battle. Use this reference to understand exactly how each feature works and how to use them effectively in your restaurant management strategy!
+| Key | Action |
+| --- | --- |
+| `Space` / `P` | Pause menu |
+| `1` `2` `3` | Menu / Marketing / Operations |
+| `←` `→` (on tabs) | Previous / next tab |
+| `M` | Mute music & effects |
+| `Esc` | Close the open dialog |
+| `Tab` | Move focus (focus is trapped inside dialogs) |

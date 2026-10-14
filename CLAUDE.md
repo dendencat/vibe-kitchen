@@ -5,11 +5,27 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository Status
 
-This is currently an empty repository with no source code, configuration files, or documentation. When the project is initialized with code, this file should be updated with:
+AI Restaurant Battle v2: TypeScript (strict) + Vite single-page app with a three.js 3D plaza and Web Audio BGM.
 
-- Build, test, and lint commands specific to the project type
-- High-level architecture overview
-- Key patterns and conventions used in the codebase
+### Commands
+- `npm run dev` — dev server (http://localhost:5173)
+- `npm run build` — type check + production bundle to `dist/`
+- `npm run typecheck` / `npm run lint` / `npm run format:check`
+- `npm test` — Vitest (jsdom); `npm run test:coverage` enforces 100 % coverage
+- `npm run test:e2e` — Playwright against the built app (uses the preinstalled Chromium)
+
+### Architecture (details: `docs/ARCHITECTURE.md`)
+- `src/game/` — view-agnostic model: `GameEngine` (1 s ticks, events, snapshots), pure formulas in `Simulation.ts`
+- `src/ai/` — five rival strategies, `AIController`, Sakura advisor (`SupportAI` + bilingual `AdviceTemplates`)
+- `src/three/` — `SceneRenderer` (WebGL glue, e2e-tested) plus pure, unit-tested `SceneLayout` / `CrowdSimulator`
+- `src/audio/` — `AudioManager` sequencer/synth and original tracks in a text format (`tracks.ts`)
+- `src/ui/` — DOM components built with `h()`; `src/App.ts` wires everything with injected dependencies
+- `src/localization/` — typed EN/JA tables (`ja` must match `en`)
+
+### Conventions
+- snake_case functions/methods, PascalCase classes, JSDoc on public APIs
+- Never use `innerHTML` for dynamic content — build DOM with `h()` / `textContent`
+- Keep game logic pure and testable; keep WebGL/browser-only code in `SceneRenderer.ts` / `main.ts`
 
 
 # Code Style

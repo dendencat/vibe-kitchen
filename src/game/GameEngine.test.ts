@@ -1,437 +1,368 @@
-import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+import type { GameEvent, PlayerAction } from '../types/GameTypes';
+import { GAME_CONSTANTS } from '../utils/Constants';
 import { GameEngine } from './GameEngine';
 
-// Mock DOM elements needed for GameEngine
-function setupMockDOM() {
-  // Mock required DOM elements
-  const mockElements = [
-    'revenue-chart-canvas',
-    'restaurant-canvas', 
-    'day-counter',
-    'time-remaining',
-    'ranking-list',
-    'cash-display',
-    'customer-count',
-    'satisfaction-display',
-    'competitor-grid',
-    'menu-items',
-    'advice-content',
-    'market-analysis-content'
-  ];
-  
-  mockElements.forEach(id => {
-    const element = document.createElement(id.includes('canvas') ? 'canvas' : 'div');
-    element.id = id;
-    if (id.includes('canvas')) {
-      (element as HTMLCanvasElement).width = 600;
-      (element as HTMLCanvasElement).height = 400;
-    }
-    document.body.appendChild(element);
-  });
-  
-  // Mock form elements
-  const formElements = [
-    'add-menu-item',
-    'menu-item-form',
-    'item-name',
-    'item-price', 
-    'item-cost',
-    'item-cooktime',
-    'cancel-menu',
-    'launch-campaign',
-    'hire-staff',
-    'upgrade-equipment',
-    'restart-game',
-    'menu-modal',
-    'game-over',
-    'final-results'
-  ];
-  
-  formElements.forEach(id => {
-    let element;
-    if (id.includes('form')) {
-      element = document.createElement('form');
-    } else if (id.includes('item-') || id === 'item-name') {
-      element = document.createElement('input');
-    } else if (id.includes('modal') || id.includes('game-over')) {
-      element = document.createElement('div');
-      element.classList.add('hidden');
-    } else {
-      element = document.createElement('button');
-    }
-    element.id = id;
-    document.body.appendChild(element);
-  });
-}
+const quiet = () => 0.99; // no random events, no random AI campaigns
 
-function cleanupMockDOM() {
-  document.body.innerHTML = '';
-}
+const run = (engine: GameEngine, ticks: number) => {
+  for (let i = 0; i < ticks; i++) engine.tick();
+};
 
-describe('GameEngine Integration Tests', () => {
-  let gameEngine: GameEngine;
-  
-  beforeEach(() => {
-    vi.useFakeTimers();
-    setupMockDOM();
-  });
-  
-  afterEach(() => {
-    cleanupMockDOM();
-    vi.useRealTimers();
-    vi.clearAllMocks();
+describe('GameEngine', () => {
+  it('creates a game with options', () => {
+    const engine = new GameEngine({
+      playerName: 'Neko',
+      difficulty: 'easy',
+      rng: quiet,
+      dishName: k => k,
+    });
+    expect(engine.get_player().name).toBe('Neko');
+    expect(engine.get_state().difficulty).toBe('easy');
+    expect(engine.get_player().menu[0].name).toBe('burger');
+    expect(new GameEngine().get_state().difficulty).toBe('normal');
   });
 
-  describe('initialization', () => {
-    it('should initialize game engine successfully', () => {
-      expect(() => {
-        gameEngine = new GameEngine();
-      }).not.toThrow();
-    });
+  it('runs exactly seven 60-second days, then ends', () => {
+    const engine = new GameEngine({ rng: quiet });
+    const events: GameEvent[] = [];
+    engine.subscribe(event => events.push(event));
 
-    it('should create all necessary AI controllers', () => {
-      gameEngine = new GameEngine();
-      expect(gameEngine['aiControllers']).toHaveLength(5);
-    });
+    run(engine, 59);
+    expect(engine.get_state().currentDay).toBe(1);
+    engine.tick();
+    expect(engine.get_state().currentDay).toBe(2);
+    expect(events.filter(e => e.type === 'day-start')).toHaveLength(1);
 
-    it('should initialize game state correctly', () => {
-      gameEngine = new GameEngine();
-      const state = gameEngine['gameStateManager'].get_state();
-      
-      expect(state.currentDay).toBe(1);
-      expect(state.timeRemaining).toBe(60);
-      expect(state.restaurants).toHaveLength(6); // 1 player + 5 AI
-      expect(state.weatherCondition).toBe('sunny');
-    });
+    run(engine, GAME_CONSTANTS.GAME_DURATION_SECONDS - 60);
+    expect(engine.is_over()).toBe(true);
+    expect(engine.get_state().elapsedSeconds).toBe(GAME_CONSTANTS.GAME_DURATION_SECONDS);
+    expect(engine.get_state().currentDay).toBe(7);
+    const over = events.find(e => e.type === 'game-over');
+    expect(over?.type === 'game-over' && over.results).toHaveLength(6);
+
+    const before = engine.get_state().elapsedSeconds;
+    engine.tick();
+    expect(engine.get_state().elapsedSeconds).toBe(before);
+    expect(engine.update(5000)).toBe(0);
   });
 
-  describe('game loop execution', () => {
-    it('should update game state every second', () => {
-      gameEngine = new GameEngine();
-      const initialTime = gameEngine['gameStateManager'].get_state().timeRemaining;
-      
-      // Advance time by 2 seconds
-      vi.advanceTimersByTime(2000);
-      
-      const currentTime = gameEngine['gameStateManager'].get_state().timeRemaining;
-      expect(currentTime).toBeLessThan(initialTime);
-    });
-
-    it('should advance to next day when time expires', () => {
-      gameEngine = new GameEngine();
-      
-      // Fast forward through a full day
-      vi.advanceTimersByTime(60000); // 60 seconds
-      
-      const state = gameEngine['gameStateManager'].get_state();
-      expect(state.currentDay).toBe(2);
-      expect(state.timeRemaining).toBe(60);
-    });
-
-    it('should end game after 7 days', () => {
-      gameEngine = new GameEngine();
-      
-      // Fast forward through 7 full days
-      vi.advanceTimersByTime(420000); // 7 minutes
-      
-      expect(gameEngine['isGameOver']).toBe(true);
-    });
+  it('simulates customers, revenue and market share', () => {
+    const engine = new GameEngine({ rng: quiet });
+    run(engine, 30);
+    const shares = engine.get_state().restaurants.map(r => r.marketShare);
+    expect(shares.reduce((a, b) => a + b, 0)).toBeCloseTo(100);
+    const player = engine.get_player();
+    expect(player.customerCount).toBeGreaterThan(0);
+    expect(player.revenue).toBeGreaterThan(0);
+    expect(player.lastServed).toBeGreaterThan(0);
   });
 
-  describe('AI decision making', () => {
-    it('should process AI decisions during game loop', () => {
-      gameEngine = new GameEngine();
-      
-      // Spy on AI decision making
-      const makeDecisionsSpy = vi.spyOn(gameEngine['aiControllers'][0], 'make_decisions');
-      
-      // Advance time to trigger updates
-      vi.advanceTimersByTime(1000);
-      
-      expect(makeDecisionsSpy).toHaveBeenCalled();
-    });
-
-    it('should handle AI errors gracefully', () => {
-      gameEngine = new GameEngine();
-      
-      // Mock AI controller to throw error
-      vi.spyOn(gameEngine['aiControllers'][0], 'make_decisions').mockImplementation(() => {
-        throw new Error('AI Error');
-      });
-      
-      // Should not crash the game
-      expect(() => {
-        vi.advanceTimersByTime(1000);
-      }).not.toThrow();
-    });
+  it('turns guests away when over capacity', () => {
+    const engine = new GameEngine({ rng: quiet });
+    const player = engine.get_player();
+    player.staff = [];
+    player.buzz = 2.5;
+    run(engine, 20);
+    expect(player.lastLost).toBeGreaterThan(0);
+    expect(player.utilization).toBeGreaterThan(1);
   });
 
-  describe('player actions', () => {
-    it('should execute menu actions successfully', () => {
-      gameEngine = new GameEngine();
-      
-      const action = {
-        type: 'menu' as const,
-        action: 'add_item',
-        parameters: {
-          name: 'Test Item',
-          price: 10,
-          cost: 4,
-          cookTime: 15
-        },
-        timestamp: Date.now()
-      };
-      
-      expect(() => {
-        gameEngine.execute_action('player', action);
-      }).not.toThrow();
-      
-      const player = gameEngine['gameStateManager'].get_restaurant('player');
-      expect(player?.menu.length).toBeGreaterThan(3); // Started with 3, now has more
-    });
-
-    it('should execute marketing actions successfully', () => {
-      gameEngine = new GameEngine();
-      
-      const action = {
-        type: 'marketing' as const,
-        action: 'launch_campaign',
-        parameters: {
-          budget: 5000
-        },
-        timestamp: Date.now()
-      };
-      
-      const initialCash = gameEngine['gameStateManager'].get_restaurant('player')?.cash || 0;
-      
-      gameEngine.execute_action('player', action);
-      
-      const finalCash = gameEngine['gameStateManager'].get_restaurant('player')?.cash || 0;
-      expect(finalCash).toBe(initialCash - 5000);
-    });
-
-    it('should handle invalid actions gracefully', () => {
-      gameEngine = new GameEngine();
-      
-      const invalidAction = {
-        type: 'menu' as const,
-        action: 'add_item',
-        parameters: {
-          name: '<script>evil</script>',
-          price: -10, // Invalid price
-          cost: 4,
-          cookTime: 15
-        },
-        timestamp: Date.now()
-      };
-      
-      expect(() => {
-        gameEngine.execute_action('player', invalidAction);
-      }).not.toThrow();
-    });
+  it('handles a rival with nothing to sell', () => {
+    const engine = new GameEngine({ rng: quiet });
+    const rival = engine.get_state().restaurants[1];
+    rival.menu = [];
+    engine.tick();
+    expect(rival.lastServed).toBe(0);
+    expect(rival.utilization).toBe(0);
   });
 
-  describe('market events', () => {
-    it('should process market events during game loop', () => {
-      gameEngine = new GameEngine();
-      
-      // Mock random to ensure event generation
-      const mockRandom = vi.spyOn(Math, 'random').mockReturnValue(0.05); // Low value to trigger events
-      
-      try {
-        // Run for several seconds to allow event processing
-        vi.advanceTimersByTime(10000);
-        
-        // Events might have been generated (depends on probability)
-        const state = gameEngine['gameStateManager'].get_state();
-        // Just verify the system runs without errors
-        expect(state.marketEvents).toBeDefined();
-      } finally {
-        mockRandom.mockRestore();
+  it('accumulates frame time into ticks and caps long gaps', () => {
+    const engine = new GameEngine({ rng: quiet });
+    expect(engine.update(400)).toBe(0);
+    expect(engine.get_day_progress()).toBeCloseTo(400 / 60000);
+    expect(engine.update(700)).toBe(1);
+    expect(engine.update(60_000)).toBe(1);
+    expect(engine.get_state().elapsedSeconds).toBe(2);
+  });
+
+  it('pauses and resumes', () => {
+    const engine = new GameEngine({ rng: quiet });
+    engine.pause();
+    expect(engine.is_paused()).toBe(true);
+    expect(engine.update(1000)).toBe(0);
+    engine.resume();
+    expect(engine.update(1000)).toBe(1);
+  });
+
+  it('emits market events and applies them', () => {
+    const engine = new GameEngine({ rng: () => 0 });
+    const listener = vi.fn();
+    engine.subscribe(listener);
+    engine.tick();
+    expect(listener).toHaveBeenCalledWith(expect.objectContaining({ type: 'market-event' }));
+    expect(engine.get_state().marketEvents.length).toBeGreaterThan(0);
+  });
+
+  it('unsubscribes listeners', () => {
+    const engine = new GameEngine({ rng: quiet });
+    const listener = vi.fn();
+    const off = engine.subscribe(listener);
+    off();
+    engine.tick();
+    expect(listener).not.toHaveBeenCalled();
+  });
+
+  describe('actions', () => {
+    const act = (engine: GameEngine, action: PlayerAction) =>
+      engine.execute_action('player', action);
+
+    it('adds, reprices and removes dishes', () => {
+      const engine = new GameEngine({ rng: quiet });
+      const player = engine.get_player();
+      expect(
+        act(engine, {
+          type: 'menu',
+          action: 'add_item',
+          parameters: { name: 'Taco', price: 9, cost: 3, cookTime: 30 },
+        })
+      ).toEqual({ ok: true });
+      const taco = player.menu[player.menu.length - 1];
+      expect(taco.customerRating).toBeGreaterThan(4.5);
+      expect(player.menuChanges).toBe(1);
+
+      expect(
+        act(engine, {
+          type: 'menu',
+          action: 'update_price',
+          parameters: { itemId: taco.id, price: 11.111 },
+        }).ok
+      ).toBe(true);
+      expect(taco.price).toBe(11.11);
+
+      expect(
+        act(engine, { type: 'menu', action: 'remove_item', parameters: { itemId: taco.id } }).ok
+      ).toBe(true);
+      expect(player.menu).toHaveLength(3);
+      expect(player.menuChanges).toBe(2);
+    });
+
+    it('rejects invalid menu changes', () => {
+      const engine = new GameEngine({ rng: quiet });
+      const player = engine.get_player();
+      expect(
+        act(engine, { type: 'menu', action: 'remove_item', parameters: { itemId: 'nope' } })
+      ).toEqual({ ok: false, reason: 'errors.notFound' });
+      expect(
+        act(engine, {
+          type: 'menu',
+          action: 'update_price',
+          parameters: { itemId: player.menu[0].id, price: -1 },
+        })
+      ).toEqual({ ok: false, reason: 'errors.invalid' });
+      expect(
+        act(engine, {
+          type: 'menu',
+          action: 'add_item',
+          parameters: { name: '', price: 9, cost: 3, cookTime: 5 },
+        })
+      ).toEqual({ ok: false, reason: 'errors.invalid' });
+
+      player.menu = player.menu.slice(0, 1);
+      expect(
+        act(engine, {
+          type: 'menu',
+          action: 'remove_item',
+          parameters: { itemId: player.menu[0].id },
+        })
+      ).toEqual({ ok: false, reason: 'errors.minMenu' });
+
+      for (let i = 0; i < 9; i++) {
+        act(engine, {
+          type: 'menu',
+          action: 'add_item',
+          parameters: { name: `D${i}`, price: 9, cost: 3, cookTime: 5 },
+        });
       }
+      expect(
+        act(engine, {
+          type: 'menu',
+          action: 'add_item',
+          parameters: { name: 'X', price: 9, cost: 3, cookTime: 5 },
+        })
+      ).toEqual({ ok: false, reason: 'errors.menuFull' });
     });
 
-    it('should handle weather changes during day transitions', () => {
-      gameEngine = new GameEngine();
-      
-      const initialWeather = gameEngine['gameStateManager'].get_state().weatherCondition;
-      
-      // Advance to next day
-      vi.advanceTimersByTime(60000);
-      
-      const newWeather = gameEngine['gameStateManager'].get_state().weatherCondition;
-      // Weather should be one of the valid options
-      expect(['sunny', 'rainy', 'cloudy']).toContain(newWeather);
-    });
-  });
-
-  describe('restaurant operations', () => {
-    it('should update customer counts and revenue', () => {
-      gameEngine = new GameEngine();
-      
-      const initialState = gameEngine['gameStateManager'].get_state();
-      const initialCustomers = initialState.restaurants[0].customerCount;
-      const initialRevenue = initialState.restaurants[0].revenue;
-      
-      // Run for several seconds
-      vi.advanceTimersByTime(5000);
-      
-      const finalState = gameEngine['gameStateManager'].get_state();
-      const finalCustomers = finalState.restaurants[0].customerCount;
-      const finalRevenue = finalState.restaurants[0].revenue;
-      
-      // Should have some customers and revenue (might be zero due to randomness)
-      expect(finalCustomers).toBeGreaterThanOrEqual(initialCustomers);
-      expect(finalRevenue).toBeGreaterThanOrEqual(initialRevenue);
+    it('launches campaigns using the preset budget', () => {
+      const engine = new GameEngine({ rng: quiet });
+      const player = engine.get_player();
+      expect(
+        act(engine, {
+          type: 'marketing',
+          action: 'launch_campaign',
+          parameters: { campaignType: 'tv', budget: 1 },
+        }).ok
+      ).toBe(true);
+      expect(player.cash).toBe(50000 - 12000);
+      expect(player.buzz).toBeGreaterThan(0.9);
+      expect(player.satisfaction).toBe(78);
     });
 
-    it('should calculate market shares correctly', () => {
-      gameEngine = new GameEngine();
-      
-      // Run the game for a bit
-      vi.advanceTimersByTime(5000);
-      
-      const state = gameEngine['gameStateManager'].get_state();
-      const totalShare = state.restaurants.reduce((sum, r) => sum + r.marketShare, 0);
-      
-      // Market shares should sum to approximately 100%
-      expect(totalShare).toBeCloseTo(100, 0);
-    });
-  });
-
-  describe('support AI integration', () => {
-    it('should generate advice during game loop', () => {
-      gameEngine = new GameEngine();
-      
-      // Spy on support AI advice generation
-      const adviceSpy = vi.spyOn(gameEngine['supportAI'], 'generate_advice');
-      
-      // Run game loop
-      vi.advanceTimersByTime(1000);
-      
-      expect(adviceSpy).toHaveBeenCalled();
+    it('accepts custom AI budgets and rejects unaffordable campaigns', () => {
+      const engine = new GameEngine({ rng: quiet });
+      const player = engine.get_player();
+      expect(
+        act(engine, {
+          type: 'marketing',
+          action: 'launch_campaign',
+          parameters: { campaignType: 'aggressive', budget: 4000 },
+        }).ok
+      ).toBe(true);
+      expect(player.cash).toBe(46000);
+      expect(player.satisfaction).toBe(76);
+      player.cash = 100;
+      expect(
+        act(engine, {
+          type: 'marketing',
+          action: 'launch_campaign',
+          parameters: { campaignType: 'social', budget: 0 },
+        })
+      ).toEqual({ ok: false, reason: 'errors.notEnoughCash' });
     });
 
-    it('should update advice display', () => {
-      gameEngine = new GameEngine();
-      
-      // Spy on renderer advice update
-      const updateAdviceSpy = vi.spyOn(gameEngine['renderer'], 'update_advice');
-      
-      // Run game loop
-      vi.advanceTimersByTime(1000);
-      
-      expect(updateAdviceSpy).toHaveBeenCalled();
-    });
-  });
-
-  describe('game completion', () => {
-    it('should calculate final scores correctly', () => {
-      gameEngine = new GameEngine();
-      
-      // Set up some game state
-      const player = gameEngine['gameStateManager'].get_restaurant('player')!;
-      player.marketShare = 30;
-      player.revenue = 10000;
-      player.satisfaction = 85;
-      player.expenses = 5000;
-      
-      const score = gameEngine['calculate_final_score'](player);
-      
-      // Score should be calculated based on the formula
-      const expectedScore = Math.round(
-        30 * 1000 + // Market share points
-        10000 * 0.1 + // Revenue points  
-        85 * 100 + // Satisfaction points
-        (10000 / 5000) * 50 // Efficiency points
-      );
-      
-      expect(score).toBe(expectedScore);
+    it('hires staff within limits', () => {
+      const engine = new GameEngine({ rng: quiet });
+      const player = engine.get_player();
+      expect(
+        act(engine, { type: 'operations', action: 'hire_staff', parameters: { staffType: 'chef' } })
+          .ok
+      ).toBe(true);
+      expect(player.staff).toHaveLength(3);
+      for (let i = 0; i < 3; i++)
+        act(engine, {
+          type: 'operations',
+          action: 'hire_staff',
+          parameters: { staffType: 'chef' },
+        });
+      expect(
+        act(engine, { type: 'operations', action: 'hire_staff', parameters: { staffType: 'chef' } })
+      ).toEqual({ ok: false, reason: 'errors.staffLimit' });
+      player.cash = 0;
+      expect(
+        act(engine, {
+          type: 'operations',
+          action: 'hire_staff',
+          parameters: { staffType: 'waiter' },
+        })
+      ).toEqual({ ok: false, reason: 'errors.notEnoughCash' });
+      expect(
+        act(engine, {
+          type: 'operations',
+          action: 'hire_staff',
+          parameters: { staffType: 'manager' as 'chef' },
+        })
+      ).toEqual({ ok: false, reason: 'errors.invalid' });
     });
 
-    it('should handle division by zero in score calculation', () => {
-      gameEngine = new GameEngine();
-      
-      const restaurant = gameEngine['gameStateManager'].get_restaurant('player')!;
-      restaurant.expenses = 0; // Zero expenses
-      restaurant.revenue = 1000;
-      
-      expect(() => {
-        gameEngine['calculate_final_score'](restaurant);
-      }).not.toThrow();
+    it('upgrades the kitchen up to the max level', () => {
+      const engine = new GameEngine({ rng: quiet });
+      const player = engine.get_player();
+      const upgrade: PlayerAction = {
+        type: 'operations',
+        action: 'upgrade_equipment',
+        parameters: { equipmentType: 'kitchen' },
+      };
+      expect(act(engine, upgrade).ok).toBe(true);
+      expect(player.equipment[0]).toMatchObject({ level: 2, maintenanceCost: 200 });
+      expect(player.efficiency).toBeCloseTo(1.15);
+      player.cash = 1e6;
+      act(engine, upgrade);
+      act(engine, upgrade);
+      act(engine, upgrade);
+      expect(act(engine, upgrade)).toEqual({ ok: false, reason: 'errors.maxLevel' });
+      player.equipment[0].level = 1;
+      player.cash = 0;
+      expect(act(engine, upgrade)).toEqual({ ok: false, reason: 'errors.notEnoughCash' });
+      player.equipment = [];
+      expect(act(engine, upgrade)).toEqual({ ok: false, reason: 'errors.notFound' });
     });
 
-    it('should display game over screen when game ends', () => {
-      gameEngine = new GameEngine();
-      
-      // Spy on renderer game over display
-      const gameOverSpy = vi.spyOn(gameEngine['renderer'], 'show_game_over');
-      
-      // Fast forward to end of game
-      vi.advanceTimersByTime(420000); // 7 minutes
-      
-      expect(gameOverSpy).toHaveBeenCalled();
-    });
-  });
-
-  describe('autosave functionality', () => {
-    it('should autosave game state periodically', () => {
-      gameEngine = new GameEngine();
-      
-      // Spy on localStorage
-      const setItemSpy = vi.spyOn(Storage.prototype, 'setItem');
-      
-      // Fast forward past autosave interval
-      vi.advanceTimersByTime(30000); // 30 seconds
-      
-      expect(setItemSpy).toHaveBeenCalledWith(
-        'ai-restaurant-battle-save',
-        expect.any(String)
-      );
-    });
-
-    it('should handle autosave errors gracefully', () => {
-      gameEngine = new GameEngine();
-      
-      // Mock localStorage to throw error
-      vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
-        throw new Error('Storage full');
+    it('rejects actions for unknown restaurants or after the game', () => {
+      const engine = new GameEngine({ rng: quiet });
+      const hire: PlayerAction = {
+        type: 'operations',
+        action: 'hire_staff',
+        parameters: { staffType: 'chef' },
+      };
+      expect(engine.execute_action('ghost', hire)).toEqual({
+        ok: false,
+        reason: 'errors.notFound',
       });
-      
-      // Should not crash
-      expect(() => {
-        vi.advanceTimersByTime(30000);
-      }).not.toThrow();
+      run(engine, GAME_CONSTANTS.GAME_DURATION_SECONDS);
+      expect(engine.execute_action('player', hire)).toEqual({
+        ok: false,
+        reason: 'errors.notFound',
+      });
+    });
+
+    it('lets AI rivals act through the same rules', () => {
+      const engine = new GameEngine({ rng: quiet });
+      const listener = vi.fn();
+      engine.subscribe(listener);
+      run(engine, 10);
+      const aiActions = listener.mock.calls
+        .map(([event]) => event as GameEvent)
+        .filter(event => event.type === 'action' && event.restaurantId !== 'player');
+      expect(aiActions.length).toBeGreaterThan(0);
     });
   });
 
-  describe('pause and resume functionality', () => {
-    it('should pause and resume game correctly', () => {
-      gameEngine = new GameEngine();
-      
-      const initialTime = gameEngine['gameStateManager'].get_state().timeRemaining;
-      
-      // Pause the game
-      gameEngine.pause_game();
-      expect(gameEngine['isPaused']).toBe(true);
-      
-      // Advance time while paused
-      vi.advanceTimersByTime(5000);
-      
-      // Time should not have changed
-      const pausedTime = gameEngine['gameStateManager'].get_state().timeRemaining;
-      expect(pausedTime).toBe(initialTime);
-      
-      // Resume the game
-      gameEngine.resume_game();
-      expect(gameEngine['isPaused']).toBe(false);
-      
-      // Advance time while running
-      vi.advanceTimersByTime(2000);
-      
-      // Time should now advance
-      const resumedTime = gameEngine['gameStateManager'].get_state().timeRemaining;
-      expect(resumedTime).toBeLessThan(initialTime);
+  describe('results', () => {
+    it('ranks by score and picks award winners', () => {
+      const engine = new GameEngine({ rng: quiet });
+      const [player, rival] = engine.get_state().restaurants;
+      player.marketShare = 90;
+      player.revenue = 100;
+      rival.revenue = 9999;
+      rival.expenses = 10000;
+      rival.satisfaction = 100;
+      rival.menuChanges = 5;
+      const results = engine.get_final_results();
+      expect(results[0].id).toBe('player');
+      const awards = engine.get_awards();
+      expect(awards.revenue).toBe(rival.id);
+      expect(awards.satisfaction).toBe(rival.id);
+      expect(awards.innovation).toBe(rival.id);
+      expect(typeof awards.efficiency).toBe('string');
+    });
+  });
+
+  describe('snapshots', () => {
+    it('round-trips through restore', () => {
+      const engine = new GameEngine({ rng: quiet, playerName: 'Saved', difficulty: 'hard' });
+      run(engine, 75);
+      const snapshot = JSON.parse(JSON.stringify(engine.snapshot()));
+      const restored = GameEngine.restore(snapshot, { rng: quiet });
+      expect(restored?.get_player().name).toBe('Saved');
+      expect(restored?.get_state().currentDay).toBe(2);
+      expect(restored?.get_state().difficulty).toBe('hard');
+      restored?.tick();
+      expect(restored?.get_state().elapsedSeconds).toBe(76);
+      expect(engine.get_state().elapsedSeconds).toBe(75);
+    });
+
+    it.each([
+      null,
+      'x',
+      {},
+      { version: 1, state: {} },
+      { version: 2 },
+      { version: 2, state: { restaurants: [], currentDay: 1 } },
+      { version: 2, state: { restaurants: [1, 2, 3, 4, 5, 6], currentDay: 9 } },
+      { version: 2, state: { restaurants: [1, 2, 3, 4, 5, 6], currentDay: '1' } },
+      { version: 2, state: { restaurants: [1, 2, 3, 4, 5, 6], currentDay: 0 } },
+    ])('rejects invalid snapshot %#', value => {
+      expect(GameEngine.restore(value)).toBeNull();
     });
   });
 });

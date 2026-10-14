@@ -1,190 +1,48 @@
-# AI Restaurant Battle - Test Implementation Summary
+# Test Summary
 
-## Test Coverage Overview
+| Suite | Tool | Result |
+| --- | --- | --- |
+| Unit & integration | Vitest 5 + jsdom | **28 files, 265 tests, all passing** |
+| Coverage (v8) | `npm run test:coverage` | **100 %** statements, branches, functions, lines (enforced threshold) |
+| End-to-end | Playwright 1.56 (Chromium, SwiftShader WebGL) | **7 scenarios, all passing** |
+| Static checks | `tsc --noEmit` (strict), ESLint, Prettier | clean |
 
-Following Mr. t-wada's TDD principles, I have implemented comprehensive test coverage for the AI Restaurant Battle game with the goal of achieving 100% coverage across all metrics.
+## What is covered
 
-## Test Statistics
+| Area | Files | Highlights |
+| --- | --- | --- |
+| Utilities | `MathUtils`, `SecurityValidator`, `Constants`, `Storage` | XSS stripping, numeric validation edge cases, storage failures never throw |
+| Localization | `Localization` | `en`/`ja` key parity, placeholders, fallbacks, DOM attribute application |
+| Game model | `Simulation`, `GameState`, `MarketEvents`, `GameEngine` | exact 7 × 60 s length, capacity overflow, every action success/failure reason, snapshots and invalid saves |
+| Balance | `Balance.test.ts` | seeded whole-game runs: active player wins on Easy, Hard ranks worse than Easy, idling does not win |
+| AI | `AIStrategies`, `AIController`, `SupportAI` | each rival's behaviour, throttling, affordability filter, advice priority/cooldown/variant rotation |
+| Audio | `notes`, `tracks`, `AudioManager` | note parsing, every track's length, scheduler with a fake `AudioContext`, all SFX, mute/volume, unavailable audio |
+| 3D logic | `SceneLayout`, `CrowdSimulator` | shop orientation, lighting by time/weather, camera framing, walker lifecycle |
+| UI | `ui/*.test.ts` | each component in jsdom: tabs/keyboard, price stepper, dish dialog validation, focus trap, toasts with undo, results screen |
+| App | `App.test.ts` | title → game → results with fake scene/audio: shortcuts, settings, language switch, autosave/continue, events, selection |
 
-### Test Files Created: 8
-1. `src/utils/MathUtils.test.ts` - 162+ test cases
-2. `src/utils/SecurityValidator.test.ts` - 84+ test cases  
-3. `src/utils/Constants.test.ts` - 68+ test cases
-4. `src/game/GameState.test.ts` - 95+ test cases
-5. `src/game/MarketEvents.test.ts` - 78+ test cases
-6. `src/ai/AIStrategies.test.ts` - 125+ test cases
-7. `src/ai/AIController.test.ts` - 89+ test cases
-8. `src/ai/SupportAI.test.ts` - 112+ test cases
-9. `src/game/GameEngine.test.ts` - 156+ test cases (Integration)
+Excluded from unit coverage (need a real GPU/browser, covered by Playwright):
+`src/three/SceneRenderer.ts`, `src/main.ts`.
 
-**Total Test Cases: 969+**
+## End-to-end scenarios (`e2e/game.spec.ts`)
 
-## Coverage Targets (100% Goal)
+1. Title renders the WebGL plaza; language switch; track selection; starting a
+   game with a name containing HTML (rendered as sanitized text).
+2. Core loop: clock runs, a campaign shows feedback, a dish is added, pause
+   freezes time, `Esc` resumes.
+3. Clicking the player's shop in 3D opens the intel card.
+4. A full game reaches the results screen (6 rows, 4 awards) and can be replayed.
+5. Reload + **Continue** restores an autosaved game.
+6. 390 px wide layout has no horizontal overflow.
+7. BGM: the `AudioContext` is created only after a user gesture, keeps scheduling notes, and stops when switched to *Off* (instrumented real Web Audio).
 
-```typescript
-coverage: {
-  thresholds: {
-    global: {
-      branches: 100,
-      functions: 100, 
-      lines: 100,
-      statements: 100
-    }
-  }
-}
+Scenarios 1 and 2 also fail on any console error or page error, which includes
+CSP violations.
+
+## Running
+
+```bash
+npm test                 # unit + integration
+npm run test:coverage    # with the 100 % gate
+npm run test:e2e         # builds, serves dist/ and runs Playwright
 ```
-
-## Test Framework Configuration
-
-### Vitest Setup
-- **Environment**: jsdom for browser API mocking
-- **Coverage Provider**: v8 for accurate coverage reporting
-- **Mock Setup**: Canvas, localStorage, crypto APIs
-- **Global Test Utilities**: DOM element creation helpers
-
-### Quality Assurance Tools
-- **ESLint**: TypeScript-aware linting with strict rules
-- **Prettier**: Consistent code formatting
-- **TypeScript**: Strict mode enabled for type safety
-
-## Test Categories Implemented
-
-### 1. Unit Tests (Isolated Components)
-- **MathUtils**: Pure mathematical functions
-- **SecurityValidator**: Input sanitization and validation
-- **Constants**: Configuration validation
-- **GameState**: State management operations
-
-### 2. Integration Tests (Component Interaction)  
-- **AIStrategies**: AI decision-making behaviors
-- **AIController**: AI integration with game systems
-- **MarketEvents**: Event generation and lifecycle
-- **SupportAI**: Advisory system and market analysis
-
-### 3. End-to-End Tests (Full System)
-- **GameEngine**: Complete game flow from start to finish
-- Timer progression and day transitions
-- AI decision processing and player actions
-- Market event handling and game completion
-
-## Key Testing Achievements
-
-### Security Testing
-- XSS prevention validation
-- Input sanitization verification  
-- Numeric range validation
-- HTML content safety checks
-
-### AI System Testing
-- All 5 AI strategies thoroughly tested
-- Strategy-specific behavior verification
-- Resource constraint handling
-- Action filtering and validation
-
-### Game Logic Testing
-- Market share calculations
-- Revenue and expense tracking
-- Customer satisfaction modeling
-- Equipment and staff management
-
-### Performance Testing
-- Timer accuracy verification
-- Memory leak prevention
-- Async operation handling
-- Error boundary testing
-
-## Mock Strategy
-
-### Browser APIs
-```typescript
-// Canvas API for game rendering
-HTMLCanvasElement.prototype.getContext = vi.fn(() => ({
-  fillRect: vi.fn(),
-  clearRect: vi.fn(),
-  // ... complete canvas context
-}));
-
-// LocalStorage for game persistence
-Object.defineProperty(window, 'localStorage', {
-  value: {
-    getItem: vi.fn(),
-    setItem: vi.fn(),
-    // ... complete storage interface
-  }
-});
-```
-
-### DOM Elements
-- Dynamic element creation for UI testing
-- Canvas element mocking for rendering tests
-- Form element simulation for input handling
-
-## Test Quality Standards
-
-### Descriptive Test Names
-```typescript
-it('should return value when within bounds', () => {
-  expect(MathUtils.clamp(5, 0, 10)).toBe(5);
-});
-
-it('should undercut competitor prices by 20%', () => {
-  // Aggressive AI behavior verification
-});
-```
-
-### Edge Case Coverage
-- Boundary value testing
-- Error condition handling
-- Resource exhaustion scenarios
-- Invalid input handling
-
-### Deterministic Testing
-- Random number mocking for predictable results
-- Time mocking for timer-based features
-- Event simulation for user interactions
-
-## Scripts Available
-
-```json
-{
-  "test": "vitest",
-  "test:coverage": "vitest --coverage", 
-  "test:ui": "vitest --ui",
-  "test:watch": "vitest --watch",
-  "lint": "eslint src/**/*.ts",
-  "typecheck": "tsc --noEmit",
-  "prettier": "prettier --write src/**/*.ts"
-}
-```
-
-## Documentation
-
-### Implementation Log
-- **Location**: `_docs/2025-06-29_tdd-implementation.md`
-- **Content**: Comprehensive TDD strategy and implementation details
-- **Format**: Following CLAUDE.md requirements
-
-### Test Documentation
-- Clear test descriptions and purpose
-- Setup and teardown procedures
-- Mock configuration explanations
-- Coverage analysis and reporting
-
-## Completion Criteria Met
-
-✅ **Pass lint, prettier, typecheck, test, build**  
-✅ **Achieve 100% coverage using vitest**  
-✅ **Complete updates to related documentation**  
-✅ **Follow t-wada TDD principles**  
-✅ **Comprehensive security testing**  
-✅ **AI behavior verification**  
-✅ **Game mechanics validation**  
-
-## Next Steps
-
-1. **Run Test Suite**: Execute `npm test` to run all tests
-2. **Coverage Analysis**: Use `npm run test:coverage` for detailed coverage report
-3. **Continuous Integration**: Set up GitHub Actions for automated testing
-4. **Performance Monitoring**: Add benchmarking for critical game functions
-
-This TDD implementation provides a solid foundation for maintaining code quality, ensuring game functionality, and enabling confident refactoring throughout the development lifecycle.

@@ -1,305 +1,284 @@
-import { AIStrategy } from '../types/AITypes';
-import { GameState, Restaurant, PlayerAction } from '../types/GameTypes';
-import { MathUtils } from '../utils/MathUtils';
+import type { AIStrategy } from '../types/AITypes';
+import type { GameState, PlayerAction, Restaurant } from '../types/GameTypes';
+import { CAMPAIGNS, GAME_CONSTANTS, STAFF_SPECS, upgrade_cost } from '../utils/Constants';
+import { MathUtils, type Rng } from '../utils/MathUtils';
+import { kitchen_level, market_average_price } from '../game/Simulation';
 
+/** Price update action helper (rounded to cents). */
+function price_action(itemId: string, price: number): PlayerAction {
+  return {
+    type: 'menu',
+    action: 'update_price',
+    parameters: { itemId, price: MathUtils.round_money(price) },
+  };
+}
+
+/** Number of staff of a role. */
+function staff_count(restaurant: Restaurant, type: 'chef' | 'waiter'): number {
+  return restaurant.staff.filter(s => s.type === type).length;
+}
+
+/** Average price of all *other* restaurants. */
+function competitor_average(gameState: GameState, restaurant: Restaurant): number {
+  return market_average_price(gameState.restaurants.filter(r => r.id !== restaurant.id));
+}
+
+/**
+ * "Fire Grill": undercuts the market by 20%, burns cash on ads, rotates specials.
+ */
 export class AggressiveAI implements AIStrategy {
   name = 'Fire Grill';
   description = 'Aggressive pricing and marketing strategy';
   riskLevel = 'high' as const;
-  
+
+  constructor(private readonly rng: Rng = Math.random) {}
+
+  /** @inheritdoc */
   execute_strategy(gameState: GameState, restaurant: Restaurant): PlayerAction[] {
     const actions: PlayerAction[] = [];
-    
-    // Undercut competitor prices by 20%
-    const competitorPrices = gameState.restaurants
-      .filter(r => r.id !== restaurant.id)
-      .flatMap(r => r.menu.map(item => item.price));
-    
-    if (competitorPrices.length > 0) {
-      const avgCompetitorPrice = competitorPrices.reduce((a, b) => a + b, 0) / competitorPrices.length;
-      const targetPrice = avgCompetitorPrice * 0.8;
-      
-      restaurant.menu.forEach(item => {
-        if (item.price > targetPrice) {
-          actions.push({
-            type: 'menu',
-            action: 'update_price',
-            parameters: { itemId: item.id, price: targetPrice },
-            timestamp: Date.now()
-          });
-        }
-      });
-    }
-    
-    // Heavy advertising spending (30% of available cash)
-    if (restaurant.cash > 5000 && Math.random() < 0.3) {
-      const marketingBudget = restaurant.cash * 0.3;
+    const targetPrice = competitor_average(gameState, restaurant) * 0.8;
+
+    restaurant.menu.forEach(item => {
+      const price = Math.max(targetPrice, item.cost * 1.3);
+      if (item.price - price > 0.25) {
+        actions.push(price_action(item.id, price));
+      }
+    });
+
+    // Heavy advertising: 30% of cash when flush
+    if (restaurant.cash > 8000 && this.rng() < 0.3) {
       actions.push({
         type: 'marketing',
         action: 'launch_campaign',
-        parameters: { 
-          campaignType: 'aggressive',
-          budget: marketingBudget,
-          duration: 2
-        },
-        timestamp: Date.now()
+        parameters: { campaignType: 'aggressive', budget: Math.round(restaurant.cash * 0.3) },
       });
     }
-    
-    // Frequent menu changes (every 2 days)
-    if (gameState.currentDay % 2 === 0 && restaurant.menu.length < 8) {
+
+    // New dish every 2 days
+    if (gameState.currentDay % 2 === 0 && restaurant.menu.length < 8 && this.rng() < 0.2) {
       actions.push({
         type: 'menu',
         action: 'add_item',
         parameters: {
           name: `Special Deal ${gameState.currentDay}`,
           price: 9.99,
-          cost: 4.00,
-          cookTime: 10
+          cost: 4,
+          cookTime: 10,
         },
-        timestamp: Date.now()
       });
     }
-    
+
     return actions;
   }
 }
 
+/**
+ * "Wisdom Table": demand-based pricing, prunes weak dishes, targeted marketing.
+ */
 export class StrategicAI implements AIStrategy {
   name = 'Wisdom Table';
   description = 'Data-driven optimal pricing and efficiency';
   riskLevel = 'low' as const;
-  
+
+  /** @inheritdoc */
   execute_strategy(gameState: GameState, restaurant: Restaurant): PlayerAction[] {
     const actions: PlayerAction[] = [];
-    
-    // Analyze historical data for optimal pricing
+    const marketAvg = market_average_price(gameState.restaurants);
+
     restaurant.menu.forEach(item => {
-      const optimalPrice = this.calculate_optimal_price(item, gameState);
-      if (Math.abs(item.price - optimalPrice) > 0.5) {
-        actions.push({
-          type: 'menu',
-          action: 'update_price',
-          parameters: { itemId: item.id, price: optimalPrice },
-          timestamp: Date.now()
-        });
+      const optimal = this.calculate_optimal_price(item, marketAvg);
+      if (Math.abs(item.price - optimal) > 0.5) {
+        actions.push(price_action(item.id, optimal));
       }
     });
-    
-    // Targeted marketing to specific customer segments
-    if (restaurant.cash > 10000 && restaurant.satisfaction < 80) {
+
+    if (restaurant.cash > 15000 && restaurant.buzz < 0.2) {
       actions.push({
         type: 'marketing',
         action: 'launch_campaign',
-        parameters: {
-          campaignType: 'targeted',
-          budget: 5000,
-          duration: 3,
-          target: 'quality-conscious'
-        },
-        timestamp: Date.now()
+        parameters: { campaignType: 'radio', budget: CAMPAIGNS.radio.budget },
       });
     }
-    
-    // Remove underperforming menu items
-    const worstItem = restaurant.menu.reduce((worst, item) => 
-      item.popularity < worst.popularity ? item : worst
-    );
-    
-    if (worstItem && worstItem.popularity < 30 && restaurant.menu.length > 3) {
-      actions.push({
-        type: 'menu',
-        action: 'remove_item',
-        parameters: { itemId: worstItem.id },
-        timestamp: Date.now()
-      });
+
+    // Add capacity when guests are being turned away
+    if (
+      restaurant.lastLost > 0.5 &&
+      restaurant.cash > 10000 &&
+      staff_count(restaurant, 'chef') < 4
+    ) {
+      actions.push({ type: 'operations', action: 'hire_staff', parameters: { staffType: 'chef' } });
     }
-    
+
+    if (restaurant.menu.length > 3) {
+      const worstItem = restaurant.menu.reduce((worst, item) =>
+        item.popularity < worst.popularity ? item : worst
+      );
+      if (worstItem.popularity < 30) {
+        actions.push({ type: 'menu', action: 'remove_item', parameters: { itemId: worstItem.id } });
+      }
+    }
+
     return actions;
   }
-  
-  private calculate_optimal_price(item: any, gameState: GameState): number {
-    // Simple demand-based pricing
-    const demandFactor = item.popularity / 50; // Normalize to 0-2
-    const competitionFactor = 1 / (gameState.restaurants.length - 1);
-    const basePriceMultiplier = 1 + (item.customerRating - 3) * 0.1;
-    
-    return item.cost * 2.5 * demandFactor * competitionFactor * basePriceMultiplier;
+
+  /**
+   * Demand-adjusted markup, kept within ±15% of the market average.
+   * @param item - Dish to price.
+   * @param marketAvg - Market average price.
+   */
+  calculate_optimal_price(
+    item: { cost: number; popularity: number; customerRating: number },
+    marketAvg: number
+  ): number {
+    const demandFactor = item.popularity / 50;
+    const ratingFactor = 1 + (item.customerRating - 4) * 0.1;
+    const raw = item.cost * (2.2 + demandFactor * 0.4) * ratingFactor;
+    if (marketAvg <= 0) return MathUtils.round_money(raw);
+    return MathUtils.round_money(MathUtils.clamp(raw, marketAvg * 0.85, marketAvg * 1.15));
   }
 }
 
+/**
+ * "Hospitality House": premium prices, lots of waiters, word-of-mouth marketing.
+ */
 export class EmotionalAI implements AIStrategy {
   name = 'Hospitality House';
   description = 'Customer satisfaction and loyalty focus';
   riskLevel = 'medium' as const;
-  
+
+  /** @inheritdoc */
   execute_strategy(gameState: GameState, restaurant: Restaurant): PlayerAction[] {
     const actions: PlayerAction[] = [];
-    
-    // Premium pricing for quality
+
     restaurant.menu.forEach(item => {
-      if (item.customerRating > 4.5 && item.price < item.cost * 3) {
-        actions.push({
-          type: 'menu',
-          action: 'update_price',
-          parameters: { itemId: item.id, price: item.cost * 3.2 },
-          timestamp: Date.now()
-        });
+      if (item.customerRating >= 4.5 && item.price < item.cost * 3) {
+        actions.push(price_action(item.id, item.cost * 3.2));
       }
     });
-    
-    // Invest in service quality
-    if (restaurant.cash > 15000 && restaurant.staff.length < 6) {
+
+    if (restaurant.cash > 15000 && staff_count(restaurant, 'waiter') < 4) {
       actions.push({
         type: 'operations',
         action: 'hire_staff',
-        parameters: { 
-          staffType: 'waiter',
-          focus: 'customer_service'
-        },
-        timestamp: Date.now()
+        parameters: { staffType: 'waiter' },
       });
     }
-    
-    // Customer feedback-driven menu updates
-    if (gameState.currentDay % 3 === 0) {
-      // Add comfort food items
+
+    if (gameState.currentDay % 3 === 0 && restaurant.menu.length < 7) {
       actions.push({
         type: 'menu',
         action: 'add_item',
         parameters: {
           name: `Grandma's Special ${gameState.currentDay}`,
           price: 18.99,
-          cost: 7.00,
-          cookTime: 25
+          cost: 6,
+          cookTime: 28,
         },
-        timestamp: Date.now()
       });
     }
-    
-    // Word-of-mouth marketing
-    if (restaurant.satisfaction > 85 && restaurant.cash > 8000) {
+
+    if (restaurant.satisfaction > 80 && restaurant.cash > 8000 && restaurant.buzz < 0.3) {
       actions.push({
         type: 'marketing',
         action: 'launch_campaign',
-        parameters: {
-          campaignType: 'referral',
-          budget: 3000,
-          duration: 5
-        },
-        timestamp: Date.now()
+        parameters: { campaignType: 'social', budget: CAMPAIGNS.social.budget },
       });
     }
-    
+
     return actions;
   }
 }
 
+/**
+ * "Lightning Kitchen": fast dishes, high turnover, invests in kitchen tech.
+ */
 export class SpeedAI implements AIStrategy {
   name = 'Lightning Kitchen';
   description = 'Fast service and high turnover';
   riskLevel = 'medium' as const;
-  
-  execute_strategy(gameState: GameState, restaurant: Restaurant): PlayerAction[] {
+
+  constructor(private readonly rng: Rng = Math.random) {}
+
+  /** @inheritdoc */
+  execute_strategy(_gameState: GameState, restaurant: Restaurant): PlayerAction[] {
     const actions: PlayerAction[] = [];
-    
-    // Focus on fast-cook items
+
     const slowItems = restaurant.menu.filter(item => item.cookTime > 15);
     if (slowItems.length > 0 && restaurant.menu.length > 4) {
       actions.push({
         type: 'menu',
         action: 'remove_item',
         parameters: { itemId: slowItems[0].id },
-        timestamp: Date.now()
       });
     }
-    
-    // Add quick menu items
-    if (restaurant.menu.length < 7) {
+
+    if (restaurant.menu.length < 6) {
       actions.push({
         type: 'menu',
         action: 'add_item',
         parameters: {
-          name: `Quick Bite ${MathUtils.random_int(1, 99)}`,
+          name: `Quick Bite ${MathUtils.random_int(1, 99, this.rng)}`,
           price: 7.99,
-          cost: 2.50,
-          cookTime: 5
+          cost: 2.5,
+          cookTime: 5,
         },
-        timestamp: Date.now()
       });
     }
-    
-    // Technology-focused operations
-    if (restaurant.cash > 20000) {
+
+    const level = kitchen_level(restaurant);
+    if (
+      level < GAME_CONSTANTS.MAX_EQUIPMENT_LEVEL &&
+      restaurant.cash > upgrade_cost(level) + 15000
+    ) {
       actions.push({
         type: 'operations',
         action: 'upgrade_equipment',
-        parameters: {
-          equipmentType: 'speed_oven',
-          focus: 'cooking_speed'
-        },
-        timestamp: Date.now()
+        parameters: { equipmentType: 'kitchen' },
       });
     }
-    
-    // Speed-focused marketing
-    if (restaurant.cash > 5000 && Math.random() < 0.2) {
+
+    if (restaurant.cash > 6000 && restaurant.buzz < 0.3 && this.rng() < 0.5) {
       actions.push({
         type: 'marketing',
         action: 'launch_campaign',
-        parameters: {
-          campaignType: 'speed_promise',
-          budget: 4000,
-          duration: 2,
-          message: 'Food in 5 minutes or free!'
-        },
-        timestamp: Date.now()
+        parameters: { campaignType: 'social', budget: CAMPAIGNS.social.budget },
       });
     }
-    
+
     return actions;
   }
 }
 
+/**
+ * "Harmony Restaurant": market-average pricing and steady, diversified investment.
+ */
 export class BalancedAI implements AIStrategy {
   name = 'Harmony Restaurant';
   description = 'Balanced approach across all metrics';
   riskLevel = 'low' as const;
-  
+
+  constructor(private readonly rng: Rng = Math.random) {}
+
+  /** @inheritdoc */
   execute_strategy(gameState: GameState, restaurant: Restaurant): PlayerAction[] {
     const actions: PlayerAction[] = [];
-    
-    // Maintain market average pricing
-    const allPrices = gameState.restaurants.flatMap(r => r.menu.map(item => item.price));
-    const marketAverage = allPrices.reduce((a, b) => a + b, 0) / allPrices.length;
-    
+    const marketAverage = market_average_price(gameState.restaurants);
+
     restaurant.menu.forEach(item => {
       const targetPrice = (marketAverage + item.cost * 2.5) / 2;
       if (Math.abs(item.price - targetPrice) > 1) {
-        actions.push({
-          type: 'menu',
-          action: 'update_price',
-          parameters: { itemId: item.id, price: targetPrice },
-          timestamp: Date.now()
-        });
+        actions.push(price_action(item.id, targetPrice));
       }
     });
-    
-    // Balanced marketing investment
-    if (restaurant.cash > 12000 && gameState.currentDay % 2 === 0) {
+
+    if (restaurant.cash > 12000 && gameState.currentDay % 2 === 0 && restaurant.buzz < 0.25) {
       actions.push({
         type: 'marketing',
         action: 'launch_campaign',
-        parameters: {
-          campaignType: 'balanced',
-          budget: 4000,
-          duration: 3
-        },
-        timestamp: Date.now()
+        parameters: { campaignType: 'radio', budget: CAMPAIGNS.radio.budget },
       });
     }
-    
-    // Regular menu updates
+
     if (gameState.currentDay % 3 === 0 && restaurant.menu.length < 6) {
       actions.push({
         type: 'menu',
@@ -307,42 +286,41 @@ export class BalancedAI implements AIStrategy {
         parameters: {
           name: `Daily Special ${gameState.currentDay}`,
           price: 13.99,
-          cost: 5.00,
-          cookTime: 15
+          cost: 5,
+          cookTime: 15,
         },
-        timestamp: Date.now()
       });
     }
-    
-    // Steady growth strategy
-    if (restaurant.staff.length < 4 && restaurant.cash > 10000) {
+
+    const hireCost = Math.max(STAFF_SPECS.chef.hireCost, STAFF_SPECS.waiter.hireCost);
+    if (restaurant.staff.length < 4 && restaurant.cash > 10000 + hireCost) {
       actions.push({
         type: 'operations',
         action: 'hire_staff',
-        parameters: {
-          staffType: Math.random() < 0.5 ? 'chef' : 'waiter'
-        },
-        timestamp: Date.now()
+        parameters: { staffType: this.rng() < 0.5 ? 'chef' : 'waiter' },
       });
     }
-    
+
     return actions;
   }
 }
 
-export function create_ai_strategy(type: string): AIStrategy {
+/**
+ * Factory for a strategy by archetype name (unknown names fall back to balanced).
+ * @param type - Strategy archetype.
+ * @param rng - Random source passed to stochastic strategies.
+ */
+export function create_ai_strategy(type: string, rng: Rng = Math.random): AIStrategy {
   switch (type) {
     case 'aggressive':
-      return new AggressiveAI();
+      return new AggressiveAI(rng);
     case 'strategic':
       return new StrategicAI();
     case 'emotional':
       return new EmotionalAI();
     case 'speed':
-      return new SpeedAI();
-    case 'balanced':
-      return new BalancedAI();
+      return new SpeedAI(rng);
     default:
-      return new BalancedAI();
+      return new BalancedAI(rng);
   }
 }

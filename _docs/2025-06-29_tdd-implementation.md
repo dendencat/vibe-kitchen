@@ -1,3 +1,5 @@
+> **Archived (v1).** Describes the original TDD setup. The current suite and coverage gate are documented in `TEST_SUMMARY.md` and `docs/ARCHITECTURE.md`.
+
 # TDD Implementation for AI Restaurant Battle
 
 **Date:** 2025-06-29  
