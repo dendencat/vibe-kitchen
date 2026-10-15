@@ -1,94 +1,105 @@
-import { MarketEvent } from '../types/GameTypes';
-import { GAME_CONFIG } from '../utils/Constants';
-import { MathUtils } from '../utils/MathUtils';
+import type { MarketEvent, MarketEventEffect, Weather } from '../types/GameTypes';
+import { GAME_CONFIG, GAME_CONSTANTS } from '../utils/Constants';
+import { MathUtils, type Rng } from '../utils/MathUtils';
 
+/**
+ * Rolls random market events and aggregates the effects of active ones.
+ * Durations are counted in simulated time, so pausing freezes them.
+ */
 export class MarketEventManager {
-  private activeEvents: Set<string> = new Set();
-  
-  generate_random_event(): MarketEvent | null {
-    // Filter events that aren't already active
-    const availableEvents = GAME_CONFIG.events.filter(
-      event => !this.activeEvents.has(event.id)
+  constructor(
+    private readonly rng: Rng = Math.random,
+    private readonly catalog: MarketEvent[] = GAME_CONFIG.events,
+    private readonly chance: number = GAME_CONFIG.eventChance
+  ) {}
+
+  /**
+   * Possibly starts a new event that is not already active.
+   * @param active - Currently active events.
+   * @returns A fresh event copy, or null.
+   */
+  roll(active: MarketEvent[]): MarketEvent | null {
+    if (this.rng() >= this.chance) return null;
+    const activeIds = new Set(active.map(e => e.id));
+    const available = this.catalog.filter(event => !activeIds.has(event.id));
+    if (available.length === 0) return null;
+    const picked = MathUtils.weighted_random(
+      available,
+      available.map(e => e.probability),
+      this.rng
     );
-    
-    if (availableEvents.length === 0) return null;
-    
-    // Check probabilities
-    for (const event of availableEvents) {
-      if (Math.random() < event.probability) {
-        this.activeEvents.add(event.id);
-        
-        // Remove from active events when duration expires
-        setTimeout(() => {
-          this.activeEvents.delete(event.id);
-        }, event.duration * 60 * 1000); // Convert days to milliseconds
-        
-        return { ...event };
-      }
-    }
-    
-    return null;
+    return { ...picked, effect: { ...picked.effect } };
   }
-  
+
+  /**
+   * Advances event timers by one simulated second.
+   * @param active - Events to age (mutated).
+   */
+  age(active: MarketEvent[]): void {
+    active.forEach(event => {
+      event.duration -= 1 / GAME_CONSTANTS.SECONDS_PER_DAY;
+    });
+  }
+
+  /**
+   * Product of a multiplier across active events relevant to a restaurant.
+   * @param active - Active events.
+   * @param key - Effect to combine.
+   * @param isPlayer - Whether player-scoped events apply.
+   */
+  static multiplier(
+    active: MarketEvent[],
+    key: 'customerMultiplier' | 'costMultiplier',
+    isPlayer = false
+  ): number {
+    return MarketEventManager.relevant(active, isPlayer).reduce(
+      (product, event) => product * (event.effect[key] ?? 1),
+      1
+    );
+  }
+
+  /**
+   * Sum of satisfaction bonuses across relevant events.
+   * @param active - Active events.
+   * @param isPlayer - Whether player-scoped events apply.
+   */
+  static satisfaction_bonus(active: MarketEvent[], isPlayer: boolean): number {
+    return MarketEventManager.relevant(active, isPlayer).reduce(
+      (sum, event) => sum + (event.effect.satisfactionBonus ?? 0),
+      0
+    );
+  }
+
+  /**
+   * Creates an ad-hoc event (e.g. weather or competitor driven).
+   * @param effect - Effect payload.
+   * @param duration - Duration in days.
+   */
   create_custom_event(
     name: string,
     description: string,
-    effect: Partial<MarketEvent['effect']>,
+    effect: MarketEventEffect,
     duration: number
   ): MarketEvent {
     return {
-      id: `custom-${Date.now()}`,
+      id: `custom-${name.toLowerCase().replace(/\s+/g, '-')}`,
       name,
       description,
       effect,
       duration,
-      probability: 1.0 // Custom events always trigger
+      probability: 1,
+      scope: 'market',
     };
   }
-  
-  get_weather_event(weather: 'sunny' | 'rainy' | 'cloudy'): MarketEvent | null {
-    switch (weather) {
-      case 'rainy':
-        return this.create_custom_event(
-          'Rainy Weather',
-          'The rain is keeping some customers away',
-          { customerMultiplier: 0.8 },
-          1
-        );
-      case 'sunny':
-        return this.create_custom_event(
-          'Beautiful Weather',
-          'The nice weather is bringing more customers out',
-          { customerMultiplier: 1.2 },
-          1
-        );
-      default:
-        return null;
-    }
+
+  /**
+   * Random weather for a new day.
+   */
+  roll_weather(): Weather {
+    return MathUtils.weighted_random<Weather>(['sunny', 'cloudy', 'rainy'], [5, 3, 2], this.rng);
   }
-  
-  get_competitor_event(competitorAction: string): MarketEvent | null {
-    switch (competitorAction) {
-      case 'price_war':
-        return this.create_custom_event(
-          'Price War',
-          'Competitors are slashing prices!',
-          { customerMultiplier: 0.9, costMultiplier: 0.9 },
-          2
-        );
-      case 'new_competitor':
-        return this.create_custom_event(
-          'New Competitor',
-          'A new restaurant has opened nearby',
-          { customerMultiplier: 0.85 },
-          3
-        );
-      default:
-        return null;
-    }
-  }
-  
-  clear_events(): void {
-    this.activeEvents.clear();
+
+  private static relevant(active: MarketEvent[], isPlayer: boolean): MarketEvent[] {
+    return active.filter(event => event.scope === 'market' || isPlayer);
   }
 }

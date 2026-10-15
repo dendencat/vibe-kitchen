@@ -1,155 +1,38 @@
-# AI Restaurant Battle - Localization Features
+# Localization / ローカライズ
 
-## 🌍 Multi-Language Support
+The game ships in **English** and **Japanese**. The initial language follows
+the browser (`ja*` → Japanese) and is saved in the settings.
 
-The game now supports both English and Japanese languages with a complete localization system.
+## How it works
 
-## 🚀 New Features Added
+- String tables live in `src/localization/strings.ts`. `ja` is declared with
+  the type of `en` (`Strings`), so a missing or extra key is a **compile
+  error**; `Localization.test.ts` additionally checks both tables have
+  identical keys.
+- `localization.t('dotted.key', { name: 'value' })` resolves a string and
+  fills `{placeholders}`. Missing keys fall back to English, then to the key.
+- Static UI text is marked with `data-i18n` (text), `data-i18n-aria`
+  (`aria-label`), `data-i18n-title` and `data-i18n-placeholder`.
+  `h('span', { i18n: 'cash' })` sets the attribute and text in one go.
+- On language change, `App` re-applies translations to the document, rebuilds
+  language-dependent lists (menu cards, events) and re-draws the 3D shop
+  signs via `SceneRenderer.set_names()`.
+- AI restaurant names are localized at display time from `strategyType`.
+  The player's restaurant name is whatever the player typed.
+- Starting dishes and presets are localized when created (`dishes.*`).
+- Sakura's advice has its own bilingual pools in
+  `src/ai/AdviceTemplates.ts`; successive tips rotate through the variants.
 
-### 1. Opening Screen
-- **File**: `opening.html`
-- Beautiful animated opening screen with cherry blossom effects
-- Story about Sakura Valley - a fictional town setting
-- Language switcher (English/Japanese)
-- Smooth transitions to main game
+## Adding a language
 
-### 2. Language System
-- **File**: `src/localization/Localization.js`
-- Complete localization manager with 200+ translated strings
-- Automatic language persistence in localStorage
-- Dynamic text updates without page reload
-- Support for placeholder text in forms
+1. Add a table in `strings.ts`: `export const fr: Strings = { … }`.
+2. Register it in `TABLES` in `Localization.ts` and extend the `Language`
+   type in `src/types/UITypes.ts`.
+3. Add advice pools to `AdviceTemplates.ts`.
+4. Add a button in `TitleScreen.ts` and `SettingsModal.ts`.
 
-### 3. Fictional Town Story
-**Sakura Valley** - A charming town where:
-- Cherry blossoms bloom year-round
-- Locals have incredible passion for food
-- 6 restaurants compete for the "Premier Dining Establishment" title
-- One week competition period
-- Winner gets prestige, prime location, and townspeople's hearts
+## Fonts
 
-## 🎮 How to Use
-
-### Starting the Game
-1. Open `opening.html` in your browser
-2. Read the story about Sakura Valley
-3. Select your preferred language (English/日本語)
-4. Click "Start Your Restaurant" / "レストランを始める"
-
-### Language Switching
-- **Opening Screen**: Toggle between EN/JP buttons
-- **Main Game**: Use language switcher in top-right corner
-- **Persistence**: Language preference saved automatically
-
-## 🗾 Japanese Features
-
-### Localized Content
-- **Game Title**: AI レストランバトル
-- **UI Elements**: All buttons, labels, and messages
-- **AI Restaurants**: Japanese names (ファイアグリル, etc.)
-- **Notifications**: Success/error messages in Japanese
-- **Prompts**: Input dialogs in Japanese
-- **Menu Items**: Localized dish names
-
-### Typography
-- Proper Japanese font support
-- Hiragino Sans, Yu Gothic, Meiryo font stack
-- Responsive text sizing for Japanese characters
-
-## 📁 File Structure
-
-```
-├── opening.html              # New opening screen
-├── src/localization/
-│   └── Localization.js      # Complete localization system
-├── src/main.js              # Updated with language initialization
-├── src/ui/
-│   ├── GameRenderer.js      # Localized display updates
-│   └── InputHandler.js      # Localized prompts/notifications
-├── src/game/
-│   └── GameState.js         # Localized menu items
-├── src/utils/
-│   └── Constants.js         # Updated with localization keys
-└── styles/
-    └── main.css             # Language switcher styles + Japanese fonts
-```
-
-## 🔧 Technical Implementation
-
-### Language Manager Features
-- **Dynamic Loading**: No page refresh required
-- **Nested Keys**: Support for `aiRestaurants.aggressive` syntax
-- **Fallback**: Returns key if translation missing
-- **Events**: Custom `languageChanged` event for components
-- **Storage**: Automatic localStorage persistence
-
-### Localization Keys
-```javascript
-// Example usage
-localization.getText('gameTitle')                    // "AI Restaurant Battle"
-localization.getText('aiRestaurants.aggressive')     // "Fire Grill"
-localization.getText('startingMenuItems.burger')     // "Classic Burger"
-```
-
-### Event System
-```javascript
-// Listen for language changes
-document.addEventListener('languageChanged', (event) => {
-  console.log('Language changed to:', event.detail.language);
-  // Update dynamic content
-});
-```
-
-## 🎨 Design Features
-
-### Opening Screen Animations
-- **Cherry Blossoms**: Continuous falling animation
-- **Gradient Background**: Beautiful purple-blue gradient
-- **Glass Morphism**: Frosted glass effect containers
-- **Smooth Transitions**: Fade effects and hover animations
-- **Responsive Design**: Mobile-friendly layout
-
-### Language Switcher
-- **Fixed Position**: Always visible in top-right
-- **Active State**: Visual feedback for current language
-- **Smooth Transitions**: Hover effects and color changes
-- **Compact Design**: Minimal space usage
-
-## 🌸 Sakura Valley Story Elements
-
-### Setting Details
-- **Location**: Fictional peaceful town
-- **Atmosphere**: Cherry blossoms year-round
-- **Culture**: Food-passionate community
-- **Competition**: 6 restaurants total (player + 5 AI)
-- **Timeline**: 7-day competition period
-- **Prize**: Official town recognition and prime location
-
-### Narrative Elements
-- **Background**: Player arrives from big city
-- **Motivation**: Open own restaurant after years of experience
-- **Challenge**: Compete against 5 ambitious AI restaurateurs
-- **Goal**: Win hearts and stomachs of Sakura Valley residents
-- **Stakes**: Prestige, location, and community recognition
-
-## 🚀 Getting Started
-
-### For Players
-1. Navigate to `opening.html`
-2. Enjoy the story and animations
-3. Choose your language preference
-4. Start your culinary adventure!
-
-### For Developers
-1. All text uses `data-i18n` attributes
-2. Dynamic content uses `localization.getText()`
-3. Add new languages by extending the `languages` object
-4. Test with language switcher in both screens
-
-## 🎯 Default Behavior
-- **Default Language**: English (can be changed in Localization.js)
-- **Language Persistence**: Saved in browser localStorage
-- **Fallback**: English text if translation missing
-- **Font Loading**: Automatic Japanese font selection
-
-The game now provides a complete bilingual experience with an engaging story-driven opening that immerses players in the world of Sakura Valley! 🌸🍽️
+“M PLUS Rounded 1c” (via `@fontsource`) is bundled locally, split by Unicode
+range, so only the glyphs that are used get downloaded and the CSP can stay
+`font-src 'self'`.

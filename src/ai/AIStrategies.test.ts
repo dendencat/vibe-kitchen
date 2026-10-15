@@ -1,480 +1,196 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { 
-  AggressiveAI, 
-  StrategicAI, 
-  EmotionalAI, 
-  SpeedAI, 
+import { describe, expect, it } from 'vitest';
+import { make_item, make_state } from '../../test/factories';
+import type { GameState, PlayerAction, Restaurant } from '../types/GameTypes';
+import {
+  AggressiveAI,
   BalancedAI,
-  create_ai_strategy 
+  create_ai_strategy,
+  EmotionalAI,
+  SpeedAI,
+  StrategicAI,
 } from './AIStrategies';
-import { GameState, Restaurant } from '../types/GameTypes';
 
-describe('AI Strategies', () => {
-  let mockGameState: GameState;
-  let mockRestaurant: Restaurant;
-  let competitorRestaurants: Restaurant[];
+const of_type = (actions: PlayerAction[], type: string, action?: string) =>
+  actions.filter(a => a.type === type && (!action || a.action === action));
 
-  beforeEach(() => {
-    competitorRestaurants = [
-      {
-        id: 'competitor1',
-        name: 'Competitor 1',
-        type: 'ai',
-        revenue: 5000,
-        expenses: 2000,
-        cash: 45000,
-        dailyProfit: 500,
-        customerCount: 80,
-        satisfaction: 85,
-        marketShare: 20,
-        efficiency: 1.0,
-        staff: [],
-        menu: [
-          { id: 'item1', name: 'Burger', price: 15, cost: 5, cookTime: 10, popularity: 60, profitMargin: 66.67, customerRating: 4.2 }
-        ],
-        equipment: []
-      },
-      {
-        id: 'competitor2',
-        name: 'Competitor 2',
-        type: 'ai',
-        revenue: 3000,
-        expenses: 1500,
-        cash: 40000,
-        dailyProfit: 300,
-        customerCount: 60,
-        satisfaction: 75,
-        marketShare: 15,
-        efficiency: 0.9,
-        staff: [],
-        menu: [
-          { id: 'item2', name: 'Pizza', price: 18, cost: 6, cookTime: 15, popularity: 55, profitMargin: 66.67, customerRating: 4.0 }
-        ],
-        equipment: []
-      }
+function setup(index: number, overrides: Partial<Restaurant> = {}, state: Partial<GameState> = {}) {
+  const gameState = make_state(state);
+  const restaurant = Object.assign(gameState.restaurants[index], overrides);
+  return { gameState, restaurant };
+}
+
+describe('AggressiveAI', () => {
+  it('undercuts rivals by 20% but never below cost × 1.3', () => {
+    const { gameState, restaurant } = setup(1);
+    const actions = new AggressiveAI(() => 0.99).execute_strategy(gameState, restaurant);
+    const prices = of_type(actions, 'menu', 'update_price');
+    expect(prices.length).toBeGreaterThan(0);
+    prices.forEach(action => {
+      if (action.action !== 'update_price') return;
+      const item = restaurant.menu.find(i => i.id === action.parameters.itemId)!;
+      expect(action.parameters.price).toBeGreaterThanOrEqual(item.cost * 1.3 - 0.01);
+      expect(action.parameters.price).toBeLessThan(item.price);
+    });
+  });
+
+  it('spends 30% of cash on ads and adds specials on even days', () => {
+    const { gameState, restaurant } = setup(1, {}, { currentDay: 2 });
+    const actions = new AggressiveAI(() => 0.1).execute_strategy(gameState, restaurant);
+    const [campaign] = of_type(actions, 'marketing');
+    expect(campaign.action === 'launch_campaign' && campaign.parameters.budget).toBe(15000);
+    expect(of_type(actions, 'menu', 'add_item')).toHaveLength(1);
+  });
+
+  it('holds back when broke or on odd days', () => {
+    const { gameState, restaurant } = setup(1, {
+      cash: 1000,
+      menu: [make_item({ price: 1, cost: 1 })],
+    });
+    const actions = new AggressiveAI(() => 0.1).execute_strategy(gameState, restaurant);
+    expect(of_type(actions, 'marketing')).toHaveLength(0);
+    expect(of_type(actions, 'menu', 'add_item')).toHaveLength(0);
+    expect(of_type(actions, 'menu', 'update_price')).toHaveLength(0);
+    expect(new AggressiveAI().name).toBe('Fire Grill');
+  });
+});
+
+describe('StrategicAI', () => {
+  it('prices within ±15% of the market', () => {
+    const ai = new StrategicAI();
+    expect(ai.calculate_optimal_price(make_item({ cost: 4, popularity: 50 }), 12)).toBeCloseTo(
+      10.4
+    );
+    expect(ai.calculate_optimal_price(make_item({ cost: 1, popularity: 50 }), 12)).toBeCloseTo(
+      10.2
+    );
+    expect(ai.calculate_optimal_price(make_item({ cost: 10, popularity: 50 }), 12)).toBeCloseTo(
+      13.8
+    );
+    expect(ai.calculate_optimal_price(make_item({ cost: 4, popularity: 50 }), 0)).toBeCloseTo(10.4);
+  });
+
+  it('markets when buzz is low, hires when turning guests away, prunes weak dishes', () => {
+    const menu = [
+      make_item({ id: 'a', popularity: 10 }),
+      make_item({ id: 'b' }),
+      make_item({ id: 'c' }),
+      make_item({ id: 'd' }),
     ];
+    const { gameState, restaurant } = setup(2, { lastLost: 1, menu });
+    const actions = new StrategicAI().execute_strategy(gameState, restaurant);
+    expect(of_type(actions, 'marketing')).toHaveLength(1);
+    expect(of_type(actions, 'operations', 'hire_staff')).toHaveLength(1);
+    expect(of_type(actions, 'menu', 'remove_item')).toEqual([
+      { type: 'menu', action: 'remove_item', parameters: { itemId: 'a' } },
+    ]);
+  });
 
-    mockRestaurant = {
-      id: 'test-restaurant',
-      name: 'Test Restaurant',
-      type: 'ai',
-      revenue: 10000,
-      expenses: 4000,
-      cash: 50000,
-      dailyProfit: 1000,
-      customerCount: 100,
-      satisfaction: 90,
-      marketShare: 25,
-      efficiency: 1.1,
-      staff: [
-        { id: 'staff1', name: 'Chef', type: 'chef', salary: 500, efficiency: 1.0, experience: 50 },
-        { id: 'staff2', name: 'Waiter', type: 'waiter', salary: 300, efficiency: 1.0, experience: 30 }
-      ],
+  it('keeps small or healthy menus', () => {
+    const { gameState, restaurant } = setup(2, { cash: 100, buzz: 1 });
+    const actions = new StrategicAI().execute_strategy(gameState, restaurant);
+    expect(of_type(actions, 'menu', 'remove_item')).toHaveLength(0);
+    expect(of_type(actions, 'marketing')).toHaveLength(0);
+    const healthy = setup(2, {
       menu: [
-        { id: 'menu1', name: 'Signature Dish', price: 20, cost: 8, cookTime: 20, popularity: 70, profitMargin: 60, customerRating: 4.5 }
+        make_item({ id: 'a' }),
+        make_item({ id: 'b' }),
+        make_item({ id: 'c' }),
+        make_item({ id: 'd', popularity: 40 }),
       ],
-      equipment: [
-        { id: 'equip1', name: 'Kitchen', type: 'kitchen', level: 1, efficiencyBoost: 1.0, maintenanceCost: 100 }
-      ]
-    };
+    });
+    expect(
+      of_type(
+        new StrategicAI().execute_strategy(healthy.gameState, healthy.restaurant),
+        'menu',
+        'remove_item'
+      )
+    ).toHaveLength(0);
+  });
+});
 
-    mockGameState = {
-      currentDay: 3,
-      timeRemaining: 45,
-      restaurants: [mockRestaurant, ...competitorRestaurants],
-      marketEvents: [],
-      weatherCondition: 'sunny',
-      globalMarketTrends: []
-    };
+describe('EmotionalAI', () => {
+  it('premium-prices beloved dishes, hires waiters, adds comfort food, uses word of mouth', () => {
+    const { gameState, restaurant } = setup(
+      3,
+      { menu: [make_item({ customerRating: 4.8, price: 10, cost: 5 })], satisfaction: 90 },
+      { currentDay: 3 }
+    );
+    const actions = new EmotionalAI().execute_strategy(gameState, restaurant);
+    expect(of_type(actions, 'menu', 'update_price')).toHaveLength(1);
+    expect(of_type(actions, 'operations', 'hire_staff')).toHaveLength(1);
+    expect(of_type(actions, 'menu', 'add_item')).toHaveLength(1);
+    expect(of_type(actions, 'marketing')).toHaveLength(1);
   });
 
-  describe('AggressiveAI', () => {
-    let aggressiveAI: AggressiveAI;
+  it('stays quiet when nothing applies', () => {
+    const { gameState, restaurant } = setup(3, { cash: 100, satisfaction: 50 });
+    expect(new EmotionalAI().execute_strategy(gameState, restaurant)).toEqual([]);
+  });
+});
 
-    beforeEach(() => {
-      aggressiveAI = new AggressiveAI();
-    });
-
-    it('should have correct strategy properties', () => {
-      expect(aggressiveAI.name).toBe('Fire Grill');
-      expect(aggressiveAI.description).toBe('Aggressive pricing and marketing strategy');
-      expect(aggressiveAI.riskLevel).toBe('high');
-    });
-
-    it('should undercut competitor prices', () => {
-      const actions = aggressiveAI.execute_strategy(mockGameState, mockRestaurant);
-      
-      const priceUpdateActions = actions.filter(action => 
-        action.type === 'menu' && action.action === 'update_price'
-      );
-      
-      if (priceUpdateActions.length > 0) {
-        // Average competitor price is (15 + 18) / 2 = 16.5
-        // Target price should be 16.5 * 0.8 = 13.2
-        const priceAction = priceUpdateActions[0];
-        expect(priceAction.parameters.price).toBeCloseTo(13.2, 1);
-      }
-    });
-
-    it('should launch marketing campaigns when cash is available', () => {
-      const actions = aggressiveAI.execute_strategy(mockGameState, mockRestaurant);
-      
-      const marketingActions = actions.filter(action => 
-        action.type === 'marketing' && action.action === 'launch_campaign'
-      );
-      
-      // Should potentially create marketing actions when cash > 5000
-      if (marketingActions.length > 0) {
-        const marketingAction = marketingActions[0];
-        expect(marketingAction.parameters.budget).toBeLessThanOrEqual(mockRestaurant.cash * 0.3);
-        expect(marketingAction.parameters.campaignType).toBe('aggressive');
-      }
-    });
-
-    it('should add new menu items frequently', () => {
-      // Test on even day
-      mockGameState.currentDay = 2;
-      const actions = aggressiveAI.execute_strategy(mockGameState, mockRestaurant);
-      
-      const addItemActions = actions.filter(action => 
-        action.type === 'menu' && action.action === 'add_item'
-      );
-      
-      if (addItemActions.length > 0) {
-        const addAction = addItemActions[0];
-        expect(addAction.parameters.name).toContain('Special Deal');
-        expect(addAction.parameters.price).toBe(9.99);
-        expect(addAction.parameters.cost).toBe(4.00);
-        expect(addAction.parameters.cookTime).toBe(10);
-      }
-    });
+describe('SpeedAI', () => {
+  it('drops slow dishes, adds quick bites, upgrades and advertises', () => {
+    const menu = [
+      make_item({ id: 'slow', cookTime: 25 }),
+      make_item(),
+      make_item(),
+      make_item(),
+      make_item(),
+    ];
+    const { gameState, restaurant } = setup(4, { cash: 30000, menu });
+    const actions = new SpeedAI(() => 0.1).execute_strategy(gameState, restaurant);
+    expect(of_type(actions, 'menu', 'remove_item')).toHaveLength(1);
+    expect(of_type(actions, 'menu', 'add_item')).toHaveLength(1);
+    expect(of_type(actions, 'operations', 'upgrade_equipment')).toHaveLength(1);
+    expect(of_type(actions, 'marketing')).toHaveLength(1);
   });
 
-  describe('StrategicAI', () => {
-    let strategicAI: StrategicAI;
+  it('does not upgrade a maxed kitchen', () => {
+    const { gameState, restaurant } = setup(4, { cash: 1e6 });
+    restaurant.equipment[0].level = 5;
+    expect(
+      of_type(new SpeedAI(() => 0.9).execute_strategy(gameState, restaurant), 'operations')
+    ).toHaveLength(0);
+  });
+});
 
-    beforeEach(() => {
-      strategicAI = new StrategicAI();
-    });
+describe('BalancedAI', () => {
+  it('converges to market-average pricing and invests steadily', () => {
+    const { gameState, restaurant } = setup(
+      5,
+      { menu: [make_item({ price: 30 })] },
+      { currentDay: 6 }
+    );
+    const actions = new BalancedAI(() => 0.1).execute_strategy(gameState, restaurant);
+    expect(of_type(actions, 'menu', 'update_price')).toHaveLength(1);
+    expect(of_type(actions, 'marketing')).toHaveLength(1);
+    expect(of_type(actions, 'menu', 'add_item')).toHaveLength(1);
+    const [hire] = of_type(actions, 'operations');
+    expect(hire.action === 'hire_staff' && hire.parameters.staffType).toBe('chef');
+    const waiter = of_type(
+      new BalancedAI(() => 0.9).execute_strategy(gameState, restaurant),
+      'operations'
+    )[0];
+    expect(waiter.action === 'hire_staff' && waiter.parameters.staffType).toBe('waiter');
+  });
+});
 
-    it('should have correct strategy properties', () => {
-      expect(strategicAI.name).toBe('Wisdom Table');
-      expect(strategicAI.description).toBe('Data-driven optimal pricing and efficiency');
-      expect(strategicAI.riskLevel).toBe('low');
-    });
-
-    it('should optimize pricing based on data', () => {
-      const actions = strategicAI.execute_strategy(mockGameState, mockRestaurant);
-      
-      const priceUpdateActions = actions.filter(action => 
-        action.type === 'menu' && action.action === 'update_price'
-      );
-      
-      // Strategic AI should adjust prices based on optimal calculations
-      expect(priceUpdateActions.length).toBeGreaterThanOrEqual(0);
-    });
-
-    it('should launch targeted marketing when satisfaction is low', () => {
-      mockRestaurant.satisfaction = 70; // Below 80%
-      mockRestaurant.cash = 15000; // Above 10000
-      
-      const actions = strategicAI.execute_strategy(mockGameState, mockRestaurant);
-      
-      const marketingActions = actions.filter(action => 
-        action.type === 'marketing' && action.action === 'launch_campaign'
-      );
-      
-      if (marketingActions.length > 0) {
-        const marketingAction = marketingActions[0];
-        expect(marketingAction.parameters.campaignType).toBe('targeted');
-        expect(marketingAction.parameters.budget).toBe(5000);
-        expect(marketingAction.parameters.target).toBe('quality-conscious');
-      }
-    });
-
-    it('should remove underperforming menu items', () => {
-      // Add a low-performing item
-      mockRestaurant.menu.push({
-        id: 'poor-item',
-        name: 'Poor Dish',
-        price: 10,
-        cost: 5,
-        cookTime: 15,
-        popularity: 20, // Low popularity
-        profitMargin: 50,
-        customerRating: 3.0
-      });
-      
-      const actions = strategicAI.execute_strategy(mockGameState, mockRestaurant);
-      
-      const removeActions = actions.filter(action => 
-        action.type === 'menu' && action.action === 'remove_item'
-      );
-      
-      if (removeActions.length > 0) {
-        expect(removeActions[0].parameters.itemId).toBe('poor-item');
-      }
-    });
+describe('create_ai_strategy', () => {
+  it.each([
+    ['aggressive', AggressiveAI],
+    ['strategic', StrategicAI],
+    ['emotional', EmotionalAI],
+    ['speed', SpeedAI],
+    ['balanced', BalancedAI],
+    ['unknown', BalancedAI],
+  ])('creates %s', (type, Ctor) => {
+    expect(create_ai_strategy(type)).toBeInstanceOf(Ctor);
   });
 
-  describe('EmotionalAI', () => {
-    let emotionalAI: EmotionalAI;
-
-    beforeEach(() => {
-      emotionalAI = new EmotionalAI();
-    });
-
-    it('should have correct strategy properties', () => {
-      expect(emotionalAI.name).toBe('Hospitality House');
-      expect(emotionalAI.description).toBe('Customer satisfaction and loyalty focus');
-      expect(emotionalAI.riskLevel).toBe('medium');
-    });
-
-    it('should use premium pricing for high-rated items', () => {
-      const actions = emotionalAI.execute_strategy(mockGameState, mockRestaurant);
-      
-      const priceUpdateActions = actions.filter(action => 
-        action.type === 'menu' && action.action === 'update_price'
-      );
-      
-      // Should increase price for items with rating > 4.5
-      if (priceUpdateActions.length > 0) {
-        const priceAction = priceUpdateActions[0];
-        expect(priceAction.parameters.price).toBeGreaterThan(mockRestaurant.menu[0].price);
-      }
-    });
-
-    it('should hire staff for customer service', () => {
-      mockRestaurant.cash = 20000; // Above 15000
-      mockRestaurant.staff = []; // Empty staff to allow hiring
-      
-      const actions = emotionalAI.execute_strategy(mockGameState, mockRestaurant);
-      
-      const staffActions = actions.filter(action => 
-        action.type === 'operations' && action.action === 'hire_staff'
-      );
-      
-      if (staffActions.length > 0) {
-        const staffAction = staffActions[0];
-        expect(staffAction.parameters.staffType).toBe('waiter');
-        expect(staffAction.parameters.focus).toBe('customer_service');
-      }
-    });
-
-    it('should add comfort food items', () => {
-      mockGameState.currentDay = 3; // Divisible by 3
-      
-      const actions = emotionalAI.execute_strategy(mockGameState, mockRestaurant);
-      
-      const addItemActions = actions.filter(action => 
-        action.type === 'menu' && action.action === 'add_item'
-      );
-      
-      if (addItemActions.length > 0) {
-        const addAction = addItemActions[0];
-        expect(addAction.parameters.name).toContain("Grandma's Special");
-        expect(addAction.parameters.price).toBe(18.99);
-        expect(addAction.parameters.cost).toBe(7.00);
-        expect(addAction.parameters.cookTime).toBe(25);
-      }
-    });
-
-    it('should launch referral campaigns when satisfaction is high', () => {
-      mockRestaurant.satisfaction = 90; // Above 85%
-      mockRestaurant.cash = 10000; // Above 8000
-      
-      const actions = emotionalAI.execute_strategy(mockGameState, mockRestaurant);
-      
-      const marketingActions = actions.filter(action => 
-        action.type === 'marketing' && action.action === 'launch_campaign'
-      );
-      
-      if (marketingActions.length > 0) {
-        const marketingAction = marketingActions[0];
-        expect(marketingAction.parameters.campaignType).toBe('referral');
-        expect(marketingAction.parameters.budget).toBe(3000);
-        expect(marketingAction.parameters.duration).toBe(5);
-      }
-    });
-  });
-
-  describe('SpeedAI', () => {
-    let speedAI: SpeedAI;
-
-    beforeEach(() => {
-      speedAI = new SpeedAI();
-    });
-
-    it('should have correct strategy properties', () => {
-      expect(speedAI.name).toBe('Lightning Kitchen');
-      expect(speedAI.description).toBe('Fast service and high turnover');
-      expect(speedAI.riskLevel).toBe('medium');
-    });
-
-    it('should remove slow-cooking items', () => {
-      // Add a slow item
-      mockRestaurant.menu.push({
-        id: 'slow-item',
-        name: 'Slow Dish',
-        price: 25,
-        cost: 10,
-        cookTime: 30, // Above 15 minutes
-        popularity: 50,
-        profitMargin: 60,
-        customerRating: 4.0
-      });
-      
-      const actions = speedAI.execute_strategy(mockGameState, mockRestaurant);
-      
-      const removeActions = actions.filter(action => 
-        action.type === 'menu' && action.action === 'remove_item'
-      );
-      
-      if (removeActions.length > 0) {
-        expect(removeActions[0].parameters.itemId).toBe('slow-item');
-      }
-    });
-
-    it('should add quick menu items', () => {
-      const actions = speedAI.execute_strategy(mockGameState, mockRestaurant);
-      
-      const addItemActions = actions.filter(action => 
-        action.type === 'menu' && action.action === 'add_item'
-      );
-      
-      if (addItemActions.length > 0) {
-        const addAction = addItemActions[0];
-        expect(addAction.parameters.name).toContain('Quick Bite');
-        expect(addAction.parameters.price).toBe(7.99);
-        expect(addAction.parameters.cost).toBe(2.50);
-        expect(addAction.parameters.cookTime).toBe(5);
-      }
-    });
-
-    it('should upgrade equipment for speed', () => {
-      mockRestaurant.cash = 25000; // Above 20000
-      
-      const actions = speedAI.execute_strategy(mockGameState, mockRestaurant);
-      
-      const upgradeActions = actions.filter(action => 
-        action.type === 'operations' && action.action === 'upgrade_equipment'
-      );
-      
-      if (upgradeActions.length > 0) {
-        const upgradeAction = upgradeActions[0];
-        expect(upgradeAction.parameters.equipmentType).toBe('speed_oven');
-        expect(upgradeAction.parameters.focus).toBe('cooking_speed');
-      }
-    });
-
-    it('should launch speed-focused marketing', () => {
-      mockRestaurant.cash = 8000; // Above 5000
-      
-      const actions = speedAI.execute_strategy(mockGameState, mockRestaurant);
-      
-      const marketingActions = actions.filter(action => 
-        action.type === 'marketing' && action.action === 'launch_campaign'
-      );
-      
-      // Should potentially create speed marketing
-      if (marketingActions.length > 0) {
-        const marketingAction = marketingActions[0];
-        expect(marketingAction.parameters.campaignType).toBe('speed_promise');
-        expect(marketingAction.parameters.budget).toBe(4000);
-        expect(marketingAction.parameters.message).toBe('Food in 5 minutes or free!');
-      }
-    });
-  });
-
-  describe('BalancedAI', () => {
-    let balancedAI: BalancedAI;
-
-    beforeEach(() => {
-      balancedAI = new BalancedAI();
-    });
-
-    it('should have correct strategy properties', () => {
-      expect(balancedAI.name).toBe('Harmony Restaurant');
-      expect(balancedAI.description).toBe('Balanced approach across all metrics');
-      expect(balancedAI.riskLevel).toBe('low');
-    });
-
-    it('should maintain market average pricing', () => {
-      const actions = balancedAI.execute_strategy(mockGameState, mockRestaurant);
-      
-      const priceUpdateActions = actions.filter(action => 
-        action.type === 'menu' && action.action === 'update_price'
-      );
-      
-      // Should adjust prices toward market average
-      expect(priceUpdateActions.length).toBeGreaterThanOrEqual(0);
-    });
-
-    it('should launch balanced marketing campaigns', () => {
-      mockRestaurant.cash = 15000; // Above 12000
-      mockGameState.currentDay = 2; // Even day
-      
-      const actions = balancedAI.execute_strategy(mockGameState, mockRestaurant);
-      
-      const marketingActions = actions.filter(action => 
-        action.type === 'marketing' && action.action === 'launch_campaign'
-      );
-      
-      if (marketingActions.length > 0) {
-        const marketingAction = marketingActions[0];
-        expect(marketingAction.parameters.campaignType).toBe('balanced');
-        expect(marketingAction.parameters.budget).toBe(4000);
-        expect(marketingAction.parameters.duration).toBe(3);
-      }
-    });
-
-    it('should add regular menu updates', () => {
-      mockGameState.currentDay = 3; // Divisible by 3
-      
-      const actions = balancedAI.execute_strategy(mockGameState, mockRestaurant);
-      
-      const addItemActions = actions.filter(action => 
-        action.type === 'menu' && action.action === 'add_item'
-      );
-      
-      if (addItemActions.length > 0) {
-        const addAction = addItemActions[0];
-        expect(addAction.parameters.name).toContain('Daily Special');
-        expect(addAction.parameters.price).toBe(13.99);
-        expect(addAction.parameters.cost).toBe(5.00);
-        expect(addAction.parameters.cookTime).toBe(15);
-      }
-    });
-
-    it('should hire staff for steady growth', () => {
-      mockRestaurant.staff = []; // Empty to allow hiring
-      mockRestaurant.cash = 12000; // Above 10000
-      
-      const actions = balancedAI.execute_strategy(mockGameState, mockRestaurant);
-      
-      const staffActions = actions.filter(action => 
-        action.type === 'operations' && action.action === 'hire_staff'
-      );
-      
-      if (staffActions.length > 0) {
-        const staffAction = staffActions[0];
-        expect(['chef', 'waiter']).toContain(staffAction.parameters.staffType);
-      }
-    });
-  });
-
-  describe('create_ai_strategy', () => {
-    it('should create correct strategy instances', () => {
-      expect(create_ai_strategy('aggressive')).toBeInstanceOf(AggressiveAI);
-      expect(create_ai_strategy('strategic')).toBeInstanceOf(StrategicAI);
-      expect(create_ai_strategy('emotional')).toBeInstanceOf(EmotionalAI);
-      expect(create_ai_strategy('speed')).toBeInstanceOf(SpeedAI);
-      expect(create_ai_strategy('balanced')).toBeInstanceOf(BalancedAI);
-    });
-
-    it('should default to BalancedAI for unknown types', () => {
-      expect(create_ai_strategy('unknown')).toBeInstanceOf(BalancedAI);
-      expect(create_ai_strategy('')).toBeInstanceOf(BalancedAI);
-    });
+  it('gives every strategy a distinct risk profile name', () => {
+    const names = ['aggressive', 'strategic', 'emotional', 'speed', 'balanced'].map(
+      t => create_ai_strategy(t).name
+    );
+    expect(new Set(names).size).toBe(5);
   });
 });

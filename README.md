@@ -1,220 +1,111 @@
-# AI Restaurant Battle
+# AI Restaurant Battle 🌸
 
-A competitive real-time restaurant management game where you compete against 5 AI-powered opponents with distinct strategies. Build your restaurant empire in exactly 7 minutes!
+A 3D restaurant-management battle in the browser: run your shop on a low-poly
+plaza in Sakura Valley and out-sell five AI-run rivals in **7 in-game days
+(7 minutes)**.
 
-## 🎮 Game Overview
+3D の広場で 5 つの AI ライバル店と 7 日間（7 分）で市場シェアを競う、ブラウザ向けレストラン経営バトルです。
 
-**Duration:** Exactly 7 minutes (7 in-game days, 60 seconds per day)  
-**Objective:** Achieve the highest market share by the end of day 7  
-**Players:** 1 human player vs 5 AI opponents  
+![Title screen](docs/images/title.jpg)
 
-## 🤖 AI Opponents
+| Day | Dusk & rain | Results |
+| --- | --- | --- |
+| ![Gameplay](docs/images/game-day.jpg) | ![Dusk and rain](docs/images/game-dusk-rain.jpg) | ![Results](docs/images/results.jpg) |
 
-### 1. Fire Grill (Aggressive AI)
-- **Strategy:** Aggressive pricing and heavy marketing
-- **Behavior:** Undercuts prices by 20%, spends 30% on advertising
-- **Risk Level:** High
+## Highlights / 主な特徴
 
-### 2. Wisdom Table (Strategic AI)  
-- **Strategy:** Data-driven optimal pricing and efficiency
-- **Behavior:** Analyzes market data, reduces waste, targeted campaigns
-- **Risk Level:** Low
+- **3D plaza (Three.js)** — six low-poly shops around a sakura tree, a full
+  day/night cycle per in-game day, rain and clouds, falling petals, a live
+  crowd of guests, market-share pillars, a crown over the leader and confetti
+  bursts for campaigns and upgrades. Drag to orbit, click a shop to scout it.
+- **Selectable pop BGM** — four original, upbeat loops synthesized in real time
+  with Web Audio (no audio files, no licensing issues): *Sakura Pop*,
+  *Kitchen Bounce*, *Neon Diner* and *Lunch Rush*, plus synthesized sound
+  effects. Volume, mute and track can be changed any time.
+- **Reworked UX** — no more `prompt()` / `confirm()`: inline price steppers,
+  an “Add dish” dialog with presets and live margin preview, undo on removal,
+  campaign/staff/kitchen cards that show cost and disable when unaffordable,
+  toasts, a pause menu, keyboard shortcuts and a results screen with podium
+  and awards.
+- **Sakura, the advisor** — diagnoses your situation (overcrowding, pricing,
+  rivals pulling ahead…) and links straight to the relevant control tab.
+- **Meaningful decisions** — prices drive demand, staff and kitchen level cap
+  how many guests you can serve, buzz from campaigns fades over time, and lunch
+  and dinner rushes create peaks. Difficulty scales the AI rivals.
+- **Bilingual** (English / 日本語), responsive down to phone width, autosave
+  with *Continue*, reduced-motion and “battery saver” graphics options.
 
-### 3. Hospitality House (Emotional AI)
-- **Strategy:** Customer satisfaction and loyalty focus
-- **Behavior:** Premium pricing, invests in service quality
-- **Risk Level:** Medium
+## Getting started
 
-### 4. Lightning Kitchen (Speed AI)
-- **Strategy:** Fast service and high turnover
-- **Behavior:** Quick-cook items, technology focus
-- **Risk Level:** Medium
+```bash
+npm install
+npm run dev        # http://localhost:5173
+```
 
-### 5. Harmony Restaurant (Balanced AI)
-- **Strategy:** Balanced approach across all metrics
-- **Behavior:** Market average pricing, steady growth
-- **Risk Level:** Low
+Production build and preview:
 
-## 🌸 Support AI: Sakura
-Your personal AI advisor provides:
-- Real-time market analysis
-- Competitor movement warnings  
-- Strategic optimization tips
-- Risk assessments
+```bash
+npm run build      # type-checks, then bundles to dist/
+npm run preview    # http://localhost:4173
+```
 
-## 🎯 Victory Conditions
+## Controls
 
-### Primary Victory
-- Highest market share at end of day 7
+| Input | Action |
+| --- | --- |
+| Drag on the plaza | Orbit the camera (scroll / pinch to zoom) |
+| Click a shop / ranking row | Show rival intel |
+| `1` `2` `3` | Menu / Marketing / Operations tab |
+| `Space` or `P` | Pause menu (settings, music, quit) |
+| `M` | Mute / unmute |
+| `Esc` | Close dialogs |
 
-### Secondary Rankings
-1. **Total Revenue Leader** - Highest total revenue generated
-2. **Customer Satisfaction Champion** - Highest customer satisfaction rating  
-3. **Operational Efficiency Master** - Best revenue-to-expense ratio
-4. **Innovation Award** - Most menu changes and adaptations
+See [INSTRUCTION_MANUAL.md](INSTRUCTION_MANUAL.md) for every screen element and
+[TUTORIAL.md](TUTORIAL.md) for strategy.
 
-## 🕹️ How to Play
+## Rivals
 
-### Menu Management
-- **Add Items:** Click "Add New Dish" to create menu items
-- **Price Strategy:** Balance profit margins with customer appeal
-- **Remove Items:** Eliminate unpopular dishes
+| Restaurant | Strategy | Style |
+| --- | --- | --- |
+| Fire Grill | Aggressive | Undercuts the market by 20 %, spends 30 % of cash on ads |
+| Wisdom Table | Strategic | Demand-based pricing, prunes weak dishes, adds capacity when full |
+| Hospitality House | Emotional | Premium prices, many waiters, comfort food |
+| Lightning Kitchen | Speed | Fast dishes, kitchen upgrades, high turnover |
+| Harmony Restaurant | Balanced | Market-average prices, steady investment |
 
-### Marketing Campaigns  
-- **Launch Campaigns:** Invest in advertising to boost satisfaction
-- **Target Audiences:** Choose campaign types for different demographics
-- **Budget Management:** Balance marketing spend with cash reserves
+## Scoring
 
-### Operations
-- **Hire Staff:** Add chefs and waiters to improve efficiency
-- **Upgrade Equipment:** Invest in kitchen improvements
-- **Service Quality:** Monitor and improve customer satisfaction
+The winner is the restaurant with the highest market share after day 7. The
+final score (shown on the results screen) is
+`share × 1000 + revenue × 0.1 + satisfaction × 100 + (revenue / expenses) × 50`,
+plus four awards: revenue, satisfaction, efficiency and innovation.
 
-### Key Metrics to Monitor
-- **Cash Flow:** Keep enough reserves for investments
-- **Customer Count:** Track daily customer arrivals
-- **Satisfaction:** Maintain high ratings for repeat business
-- **Market Share:** Your slice of the total market
-- **Efficiency:** Revenue per expense ratio
+## Development
 
-## 🛡️ Security Features
+| Command | Purpose |
+| --- | --- |
+| `npm run typecheck` | TypeScript strict type check |
+| `npm run lint` | ESLint (typescript-eslint) |
+| `npm run format:check` | Prettier check (`npm run format` to fix) |
+| `npm test` | Vitest unit/integration tests (jsdom) |
+| `npm run test:coverage` | Tests with the 100 % coverage gate |
+| `npm run test:e2e` | Playwright end-to-end tests (builds and serves `dist/`) |
 
-- **XSS Protection:** All user inputs are sanitized
-- **Input Validation:** Prevents invalid data entry
-- **CSP Headers:** Content Security Policy implementation
-- **Type Safety:** TypeScript strict mode enabled
+Architecture, module map and balance notes: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
-## 🎨 Game Features
+## Security
 
-### Real-time Elements
-- Live revenue charts showing all competitors
-- Animated customer flow in restaurant view
-- Dynamic market events (weather, festivals, price spikes)
-- Real-time AI decision making
+- Strict CSP (`script-src 'self'`); everything, including fonts and Three.js,
+  is bundled locally.
+- All UI text is set through `textContent` — user input is never parsed as
+  HTML — and names/prices are sanitized and validated by `SecurityValidator`.
+- Saved data in `localStorage` is validated before it is loaded.
 
-### Visual Elements
-- 3D-style restaurant visualization
-- Customer satisfaction animations
-- Market share ranking display
-- Weather effects and ambiance
+## Browser support
 
-### Performance
-- Optimized for 60 FPS gameplay
-- Responsive design (1280x720 native, scales down)
-- Canvas-based rendering for smooth animations
+Modern evergreen browsers with WebGL (Chrome/Edge 90+, Firefox 88+,
+Safari 15+). Without WebGL the game still runs with the 2D interface.
 
-## 📱 Device Compatibility
+## License
 
-### Desktop (Recommended)
-- **Resolution:** 1280x720 optimal
-- **Browsers:** Chrome 90+, Firefox 88+, Safari 14+, Edge 90+
-
-### Tablet  
-- Responsive grid layout
-- Touch-optimized controls
-- Scaled UI elements
-
-### Mobile
-- Simplified layout
-- Horizontal scrolling for competitors
-- Touch-friendly buttons
-
-## 🎮 Controls
-
-### Keyboard Shortcuts
-- **ESC:** Close modals
-- **P:** Pause/Resume game
-
-### Mouse/Touch
-- Click buttons for actions
-- Modal forms for detailed input
-- Drag-friendly interface
-
-## 🚀 How to Run
-
-### Local Setup
-1. Open `index.html` in a modern web browser
-2. Or serve via local HTTP server for best performance:
-   ```bash
-   python3 -m http.server 8080
-   # Then visit http://localhost:8080
-   ```
-
-### Testing
-- Open `test-game.html` to run automated tests
-- Checks module loading, performance, and functionality
-
-## 🏆 Scoring System
-
-**Final Score Calculation:**
-- Market Share Points: `market_share * 1000`
-- Revenue Points: `total_revenue * 0.1`  
-- Satisfaction Points: `satisfaction * 100`
-- Efficiency Points: `(revenue/expenses) * 50`
-
-## 🎭 Game Events
-
-### Weather Events
-- **Sunny:** +20% customers
-- **Rainy:** -20% customers  
-- **Cloudy:** Normal conditions
-
-### Market Events
-- **Local Festival:** +50% customers (rare)
-- **TV Feature:** +30% satisfaction (very rare)
-- **Ingredient Price Spike:** +30% costs (common)
-
-## 💡 Strategy Tips
-
-### Early Game (Days 1-2)
-- Build a solid menu foundation
-- Focus on cash flow positive items
-- Monitor AI competitor strategies
-
-### Mid Game (Days 3-5)  
-- Expand menu variety
-- Launch marketing campaigns
-- Hire additional staff
-
-### Late Game (Days 6-7)
-- Optimize for maximum revenue
-- Aggressive market share grab
-- React to competitor moves
-
-### Pro Tips
-- Watch Sakura's advice closely
-- Monitor competitor satisfaction levels
-- Balance growth with cash reserves
-- Adapt pricing based on demand
-
-## 🔧 Technical Architecture
-
-### Game Engine
-- Real-time state management
-- 60 FPS rendering loop
-- AI decision making system
-- Market simulation
-
-### AI System
-- Strategy pattern implementation
-- Personality-based behaviors  
-- Dynamic decision making
-- Market analysis
-
-### Security Layer
-- Input sanitization
-- XSS prevention
-- Type validation
-- Safe HTML rendering
-
-## 📊 Development Stats
-
-- **Files:** 15+ TypeScript modules
-- **Lines of Code:** 2000+ 
-- **AI Strategies:** 5 distinct implementations
-- **Security Checks:** Multiple layers
-- **Performance Target:** 60 FPS sustained
-
----
-
-**Ready to dominate the restaurant market? Open `index.html` and start your culinary empire!** 🍽️
+MIT

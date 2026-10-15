@@ -1,557 +1,248 @@
-/* Main CSS for AI Restaurant Battle */
+/* ==========================================================================
+   AI Restaurant Battle — design tokens, base and layout
+   ========================================================================== */
 
-* {
-  margin: 0;
-  padding: 0;
+:root {
+  --font: 'M PLUS Rounded 1c', 'Hiragino Maru Gothic ProN', 'Hiragino Sans', system-ui, sans-serif;
+
+  --ink: #2b2340;
+  --ink-soft: #6b6283;
+  --ink-faint: #9a92ad;
+  --paper: #fffaf6;
+
+  --primary: #ff5d8f;
+  --primary-strong: #e63e74;
+  --primary-soft: #ffe1ea;
+  --accent: #ffc94d;
+  --mint: #22c3a6;
+  --sky: #6fb7ff;
+  --danger: #ef476f;
+  --success: #12b886;
+  --warning: #f59f00;
+
+  --glass: rgba(255, 255, 255, 0.78);
+  --glass-strong: rgba(255, 255, 255, 0.92);
+  --glass-border: rgba(255, 255, 255, 0.9);
+  --line: rgba(43, 35, 64, 0.08);
+
+  --radius-sm: 10px;
+  --radius: 16px;
+  --radius-lg: 24px;
+  --shadow: 0 10px 30px rgba(84, 45, 90, 0.16), 0 2px 6px rgba(84, 45, 90, 0.08);
+  --shadow-pop: 0 6px 0 var(--primary-strong);
+
+  --gap: 12px;
+  --side-left: 272px;
+  --side-right: 300px;
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+*,
+*::before,
+*::after {
   box-sizing: border-box;
 }
 
+html,
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-  background-color: #1a1a2e;
-  color: #eee;
+  margin: 0;
+  height: 100%;
+}
+
+body {
+  font-family: var(--font);
+  color: var(--ink);
+  background: linear-gradient(160deg, #ffe7ef 0%, #e7f4ff 100%);
   overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
-/* Japanese font support */
-body[data-lang="ja"] {
-  font-family: 'Hiragino Sans', 'ヒラギノ角ゴシック', 'Yu Gothic', 'メイリオ', 'Meiryo', sans-serif;
-}
-
-/* Language Switcher */
-.language-switcher {
-  position: fixed;
-  top: 10px;
-  right: 10px;
-  z-index: 1500;
-  display: flex;
-  gap: 5px;
-  background: rgba(22, 33, 62, 0.9);
-  padding: 5px;
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.lang-btn {
-  padding: 6px 12px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  background: rgba(255, 255, 255, 0.1);
-  color: #eee;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  font-size: 12px;
-  font-weight: 500;
-}
-
-.lang-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
-  border-color: rgba(255, 255, 255, 0.4);
-}
-
-.lang-btn.active {
-  background: #3498db;
-  border-color: #3498db;
-  color: white;
-}
-
-.game-container {
-  width: 1280px;
-  height: 720px;
-  margin: 0 auto;
-  display: grid;
-  grid-template-rows: 80px 1fr 180px;
-  grid-template-columns: 1fr 300px;
-  gap: 10px;
-  padding: 10px;
-  background-color: #0f0f1e;
-}
-
-/* Header Styles */
-.game-header {
-  grid-column: 1 / -1;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background-color: #16213e;
-  padding: 10px 20px;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-}
-
-.time-display {
-  display: flex;
-  flex-direction: column;
-  font-size: 18px;
-  font-weight: bold;
-}
-
-#day-counter {
-  color: #f39c12;
-  font-size: 24px;
-}
-
-#time-remaining {
-  color: #3498db;
-}
-
-.revenue-chart {
-  flex: 1;
-  margin: 0 20px;
-  background-color: rgba(255, 255, 255, 0.05);
-  border-radius: 4px;
-  padding: 5px;
-}
-
-.ranking-display {
-  min-width: 200px;
-}
-
-.ranking-display h3 {
-  font-size: 16px;
-  margin-bottom: 5px;
-  color: #ecf0f1;
-}
-
-#ranking-list {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.ranking-item {
-  display: flex;
-  justify-content: space-between;
-  padding: 3px 8px;
-  background-color: rgba(255, 255, 255, 0.05);
-  border-radius: 3px;
-  font-size: 14px;
-}
-
-.ranking-item.player-ranking {
-  background-color: rgba(52, 152, 219, 0.3);
-  border: 1px solid #3498db;
-}
-
-/* Main Game Area */
-.game-main {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.restaurant-view {
-  background-color: #16213e;
-  border-radius: 8px;
-  padding: 15px;
-  flex: 1;
-}
-
-.player-restaurant {
-  position: relative;
-  margin-bottom: 10px;
-}
-
-#restaurant-canvas {
-  border: 2px solid #34495e;
-  border-radius: 4px;
-  background-color: #000;
-}
-
-.restaurant-stats {
-  display: flex;
-  justify-content: space-around;
-  margin-top: 10px;
-  padding: 10px;
-  background-color: rgba(0, 0, 0, 0.3);
-  border-radius: 4px;
-}
-
-.stat-item {
-  text-align: center;
-}
-
-.stat-label {
-  display: block;
-  font-size: 12px;
-  color: #95a5a6;
-  margin-bottom: 3px;
-}
-
-.stat-value {
-  font-size: 20px;
-  font-weight: bold;
-}
-
-#cash-display {
-  color: #2ecc71;
-}
-
-#customer-count {
-  color: #3498db;
-}
-
-#satisfaction-display {
-  color: #f39c12;
-}
-
-/* AI Competitors */
-.ai-competitors {
-  background-color: #16213e;
-  border-radius: 8px;
-  padding: 15px;
-  overflow-y: auto;
-  max-height: 200px;
-}
-
-.ai-competitors h3 {
-  margin-bottom: 10px;
-  color: #ecf0f1;
-}
-
-.competitor-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 10px;
-}
-
-.competitor-card {
-  background-color: rgba(255, 255, 255, 0.05);
-  border-radius: 6px;
-  padding: 10px;
-  border: 1px solid transparent;
-  transition: all 0.3s ease;
-}
-
-.competitor-card:hover {
-  border-color: #3498db;
-  transform: translateY(-2px);
-}
-
-.competitor-card h4 {
-  font-size: 14px;
-  margin-bottom: 8px;
-  color: #ecf0f1;
-}
-
-.competitor-stats {
-  font-size: 12px;
-}
-
-.competitor-stats .stat {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 3px;
-}
-
-.competitor-stats .label {
-  color: #95a5a6;
-}
-
-.competitor-stats .value {
-  font-weight: bold;
-}
-
-/* Strategy-specific colors */
-.strategy-aggressive { color: #e74c3c; }
-.strategy-strategic { color: #3498db; }
-.strategy-emotional { color: #e91e63; }
-.strategy-speed { color: #f39c12; }
-.strategy-balanced { color: #2ecc71; }
-
-/* AI Assistant Sidebar */
-.ai-assistant {
-  background-color: #16213e;
-  border-radius: 8px;
-  padding: 15px;
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-}
-
-.sakura-avatar {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px;
-  background-color: rgba(255, 255, 255, 0.05);
-  border-radius: 6px;
-}
-
-.avatar-image {
-  font-size: 32px;
-}
-
-.assistant-name {
-  font-weight: bold;
-  color: #ff6b9d;
-}
-
-.advice-panel, .market-analysis {
-  flex: 1;
-  background-color: rgba(0, 0, 0, 0.3);
-  border-radius: 6px;
-  padding: 10px;
-}
-
-.advice-panel h4, .market-analysis h4 {
-  font-size: 14px;
-  margin-bottom: 8px;
-  color: #ecf0f1;
-}
-
-.advice-content {
-  font-size: 13px;
-  line-height: 1.5;
-  padding: 8px;
-  border-radius: 4px;
-  background-color: rgba(255, 255, 255, 0.05);
-}
-
-.advice-content.warning {
-  border-left: 3px solid #e74c3c;
-}
-
-.advice-content.opportunity {
-  border-left: 3px solid #f39c12;
-}
-
-.advice-content.tip {
-  border-left: 3px solid #3498db;
-}
-
-/* Control Panel */
-.control-panel {
-  grid-column: 1 / -1;
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 10px;
-  background-color: #16213e;
-  border-radius: 8px;
-  padding: 15px;
-}
-
-.menu-management, .marketing-controls, .operations-panel {
-  background-color: rgba(0, 0, 0, 0.3);
-  border-radius: 6px;
-  padding: 10px;
-}
-
-.control-panel h4 {
-  font-size: 16px;
-  margin-bottom: 10px;
-  color: #ecf0f1;
-}
-
-/* Menu Items */
-.menu-items-list {
-  max-height: 100px;
-  overflow-y: auto;
-  margin-bottom: 10px;
-}
-
-.menu-item {
-  background-color: rgba(255, 255, 255, 0.05);
-  border-radius: 4px;
-  padding: 8px;
-  margin-bottom: 5px;
-}
-
-.item-info {
-  display: flex;
-  justify-content: space-between;
-  font-weight: bold;
-  margin-bottom: 5px;
-}
-
-.item-stats {
-  display: flex;
-  gap: 10px;
-  font-size: 12px;
-  color: #95a5a6;
-  margin-bottom: 5px;
-}
-
-.item-actions {
-  display: flex;
-  gap: 5px;
-}
-
-/* Buttons */
-.btn, .btn-primary, .btn-secondary, .btn-small {
-  padding: 8px 16px;
-  border: none;
-  border-radius: 4px;
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  font-weight: 500;
-}
-
-.btn-primary {
-  background-color: #3498db;
-  color: white;
-}
-
-.btn-primary:hover {
-  background-color: #2980b9;
-  transform: translateY(-1px);
-}
-
-.btn-secondary {
-  background-color: #34495e;
-  color: white;
-}
-
-.btn-secondary:hover {
-  background-color: #2c3e50;
-}
-
-.btn-small {
-  padding: 4px 8px;
-  font-size: 12px;
-}
-
-/* Modals */
-.modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.8);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-}
-
-.modal.hidden {
-  display: none;
-}
-
-.modal-content {
-  background-color: #16213e;
-  border-radius: 8px;
-  padding: 20px;
-  min-width: 400px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-}
-
-.modal-content h3 {
-  margin-bottom: 15px;
-  color: #ecf0f1;
-}
-
-.modal-content form {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.modal-content input {
-  padding: 8px 12px;
-  border: 1px solid #34495e;
-  border-radius: 4px;
-  background-color: rgba(255, 255, 255, 0.05);
-  color: #ecf0f1;
-  font-size: 14px;
-}
-
-.modal-content input:focus {
-  outline: none;
-  border-color: #3498db;
-}
-
-/* Game Over Screen */
-.game-over-screen {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.9);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 2000;
-}
-
-.game-over-screen.hidden {
+[hidden] {
   display: none !important;
 }
 
-.game-over-content {
-  background-color: #16213e;
-  border-radius: 12px;
-  padding: 30px;
+button,
+input,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
+:focus-visible {
+  outline: 3px solid var(--sky);
+  outline-offset: 2px;
+}
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+kbd {
+  display: inline-block;
+  min-width: 1.6em;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  box-shadow: 0 2px 0 var(--line);
+  font-size: 0.8em;
+  font-family: var(--font);
   text-align: center;
-  max-width: 600px;
 }
 
-.game-over-content h2 {
-  font-size: 36px;
-  margin-bottom: 20px;
-  color: #f39c12;
-}
+/* ---------------------------------------------------------------- scene -- */
 
-.final-result {
-  background-color: rgba(255, 255, 255, 0.05);
-  border-radius: 6px;
-  padding: 12px;
-  margin-bottom: 10px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.final-result.winner {
-  background-color: rgba(46, 204, 113, 0.2);
-  border: 2px solid #2ecc71;
-}
-
-.final-stats {
-  display: flex;
-  gap: 15px;
-  font-size: 14px;
-  color: #95a5a6;
-}
-
-/* Notifications */
-.notification {
+.scene {
   position: fixed;
-  top: 20px;
-  right: 20px;
-  padding: 12px 20px;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 500;
-  animation: slideIn 0.3s ease;
-  z-index: 3000;
+  inset: 0;
+  z-index: 0;
 }
 
-@keyframes slideIn {
-  from {
-    transform: translateX(100%);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
+.scene-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  cursor: grab;
 }
 
-.notification.success {
-  background-color: #2ecc71;
-  color: white;
+.scene-canvas:active {
+  cursor: grabbing;
 }
 
-.notification.error {
-  background-color: #e74c3c;
-  color: white;
+.scene-fallback {
+  position: fixed;
+  left: 50%;
+  top: 40%;
+  transform: translate(-50%, -50%);
+  z-index: 1;
+  padding: 12px 18px;
+  border-radius: var(--radius);
+  background: var(--glass);
+  color: var(--ink-soft);
 }
 
-.notification.info {
-  background-color: #3498db;
-  color: white;
+/* ---------------------------------------------------------------- glass -- */
+
+.glass {
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(14px) saturate(1.3);
+  -webkit-backdrop-filter: blur(14px) saturate(1.3);
+}
+
+/* --------------------------------------------------------------- layout -- */
+
+.title-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  padding: clamp(16px, 4vw, 56px);
+  pointer-events: none;
+  background: linear-gradient(90deg, rgba(255, 240, 246, 0.55) 0%, rgba(255, 240, 246, 0) 55%);
+}
+
+.title-screen > * {
+  pointer-events: auto;
+}
+
+.game-ui {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: var(--side-left) minmax(0, 1fr) var(--side-right);
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    'hud hud hud'
+    'left stage right'
+    'left dock right';
+  gap: var(--gap);
+  padding: var(--gap);
+  pointer-events: none;
+}
+
+.game-ui > * {
+  pointer-events: auto;
+}
+
+.hud {
+  grid-area: hud;
+}
+
+.panel-left {
+  grid-area: left;
+}
+
+.panel-right {
+  grid-area: right;
+}
+
+.dock {
+  grid-area: dock;
+}
+
+.stage {
+  grid-area: stage;
+  pointer-events: none !important;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  align-self: start;
+  max-height: 100%;
+  gap: 10px;
+  min-height: 0;
+  padding: 14px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.panel-title {
+  margin: 4px 2px 0;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.toasts {
+  position: fixed;
+  z-index: 40;
+  top: 92px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: min(440px, calc(100vw - 32px));
+  pointer-events: none;
+}
+
+.toasts > * {
+  pointer-events: auto;
 }
