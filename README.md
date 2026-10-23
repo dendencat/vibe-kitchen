@@ -109,3 +109,9 @@ Safari 15+). Without WebGL the game still runs with the 2D interface.
 ## License
 
 MIT
+
+## Node.js security update — 2026-10-22
+
+Version 2.0.1 selects Node.js 22.23.4 for development/build tooling. npm installs reject Node.js versions below the fixed patch in the supported 22, 24, and 26 release lines. See the [official October 2026 security release](https://nodejs.org/en/blog/vulnerability/october-2026-security-releases). This configuration update requires rebuilding/restarting any Node.js deployment; it does not verify the runtime of an existing deployment. Dependency declarations and existing lockfile resolutions are unchanged. Verification results and any limitations are recorded below.
+
+Verified on Node.js 22.23.4: `npm ci --ignore-scripts`, typecheck, build, lint, formatting, 265 unit tests, 100% configured coverage, and all 7 Playwright scenarios passed. Chromium was downloaded to a temporary directory for browser tests. Existing deployed runtimes were not verified.
